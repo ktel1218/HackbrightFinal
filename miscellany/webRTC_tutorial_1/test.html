@@ -1,0 +1,71 @@
+<html>
+    <head>
+    <title>Peer-to-Peer Communication Test</title>
+    </head>
+    <body>
+        <h1>
+            Testing:
+        </h1>
+        <div id = "receive">
+            innerHTML to be replaced
+        </div>
+        <textarea id = "send">Text Area to send message</textarea>
+        <button id = "send">Send Button</button>
+    </body>
+    <script>
+    // #create peer connections
+    var media = {};
+    media.fake = media.audio = true;
+    var client = new webkitRTCPeerConnection;
+    var server = new webkitRTCPeerConnection;
+
+    //  open a data channel when the client connects
+
+    client.onconnection = function() 
+    {
+        var channel - client.createDataChannel("chat", {});
+
+        channel.onmessage = function(event) 
+        {
+            alert("Server: " + event.data);
+        };
+
+        channel.onopen = function() {
+            channel.send("Hello Server!");
+        };
+    };
+
+    // when the client creates a data channel the server may respond
+
+    server.ondatachannel = function(channel)
+    {
+        channel.onmessage = function (event) 
+        {
+            alert("Client: " + event.data);
+        };
+
+        channel.onopen = function () 
+        {
+            channel.send("Hello Client!");
+        };
+    };
+
+
+    // var user = new webkitRTCPeerConnection(servers,
+    //     {optional: [{RtpDataChannels: true}]});
+
+    // user.ondatachannel = function(event){
+    //     receiveChannel = event.channel;
+    //     receiveChannel.onmessage = function(event){
+    //         document.querySelector("div#receive").innerHTML = event.data;
+    //     };
+    // };
+
+    // sendChannel = pc.createDataChannel("sendDataChannel", {reliable: false});
+
+    // document.querySelector("button#send").onclick = function(){
+    //     var data = document.querySelector("textarea#send").value;
+    //     sendChannel.send(data);
+    // };
+    </script>
+</html>

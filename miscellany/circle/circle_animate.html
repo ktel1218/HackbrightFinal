@@ -1,0 +1,91 @@
+<html>
+<head>
+<title>Fullscreen circle cursor</title>
+<link href="static/css/main.css" rel="stylesheet">
+
+</head>
+<body>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript"src="Timer.js"></script>
+
+<script type="text/javascript">
+
+    // function timer(length, resolution, oninstance, oncomplete){
+    //     var steps = (length / 100) * (resolution / 10);
+    //     var speed = length / steps;
+    //     var count = 0;
+    //     var start = new Date().getTime();
+
+    //     function instance(){
+    //         if(count++ == steps){
+    //             oncomplete(steps, count);
+    //         }
+    //         else{
+    //             oninstance(steps, count);
+    //             var diff = (new Date().getTime() - start) 
+    //                         - (count * speed);
+    //             window.setTimeout(instance, (speed - diff));
+    //         }
+    //     }
+    //     window.setTimeout(instance, speed);
+    // }
+
+    $( document ).ready(function() {
+        var circle = $('.circle');
+        var square = $('.square');
+        var opacity = 100;
+        var requestAnimationFrame = window.requestAnimationFrame || 
+                            window.mozRequestAnimationFrame ||
+                            window.webkitRequestAnimationFrame || 
+                            window.msRequestAnimationFrame;
+        window.requestAnimationFrame = requestAnimationFrame;
+
+        // var timer = new Timer({
+        //     fps: 30,
+        //     run: function(){
+        //     //run game code here
+        //         console.log("timer run")
+        //         opacity = opacity - 10
+        //         square.css('opacity', opacity)
+        //     }
+        // });
+ 
+// timer.start();
+// timer.stop();
+
+
+        $( document ).mousemove(function (event) {
+
+            circle.css('top', event.pageY);
+            circle.css('left', event.pageX);
+            
+        })
+
+        $( document ).click(function (event) {
+            console.log("click!")
+            requestAnimationFrame(step);
+            
+        });
+
+        var start = null;
+
+        function step(timestamp) {
+            console.log("tick")
+            var progress;
+            if (start === null) start = timestamp;
+            progress = timestamp - start;
+            square.css.opacity = Math.min(progress/10, 200) + "%";
+            if (progress < 2000) {
+                requestAnimationFrame(step);
+            }
+        }
+
+        
+    });
+</script>
+
+    <div class="circle"></div>
+    <div class="square"></div>
+</body>
+</html>

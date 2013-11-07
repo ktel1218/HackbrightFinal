@@ -1,0 +1,25 @@
+body{
+    /*background-color: black;*/
+    /*cursor: none;*/
+    margin: 0px;
+    padding: 0px;
+}
+
+.circle{
+    background-color: white;
+    width: 3em;
+    height: 3em;
+    position:absolute;
+    border-radius: 3em;
+}
+
+.square{
+    background-color: yellow;
+    width: 5em;
+    height: 5em;
+}
+
+.tutorial{
+    width:100%;
+    height:100%;
+}
