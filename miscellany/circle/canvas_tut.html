@@ -1,98 +1,78 @@
 <html>
-    <head>
-        <title>Canvas Tutorial</title>
-        <link href="static/css/main.css" rel="stylesheet">
-        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-        <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<head>
+<title>Canvas Tutorial</title>
+<link href="static/css/main.css" rel="stylesheet">
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+</head>
+<body>
+    <canvas id="canv"></canvas>
+    <script type="text/javascript">
+    console.log(window);
+    $(document).ready(function(){
 
+        var cursorX = 0;
+        var cursorY = 0;
+        var playerX = 0;
+        var playerY = 0;
+        var maxSpeed = 400;
 
-    </head>
-    <body>
-        <canvas id="canv"></canvas>
-        <script type="text/javascript">
-        console.log(window);
-        $(document).ready(function(){
+    this.onmousemove = function(e){
+        cursorX = e.pageX;
+        cursorY = e.pageY;
+    }
 
-            var cursorX;
-            var cursorY;
+    function getDistance(x1, y1, x2, y2)
+    {
+        squareX = Math.pow((x1-x2),2);
+        squareY = Math.pow((y1-y2),2);
+        return Math.sqrt(squareX + squareY);
+    }
 
-        this.onmousemove = function(e){
-            
-            
-            cursorX = e.pageX;
-            cursorY = e.pageY;
+    function getDirection(x1, y1, x2, y2)
+    {
+        deltaY = y2 - y1;
+        deltaX = x2 - x1;
+        return Math.atan2(deltaY,deltaX);
+    }
 
+    function render(){
+        var canvas = document.getElementById('canv');
+        if(canvas.getContext){
+
+            var context = canvas.getContext('2d');
+            var radius = 50;
+
+            ang = getDirection(playerX, playerY, cursorX, cursorY);
+            l = getDistance(playerX, playerY, cursorX, cursorY);
+            if (l > maxSpeed) l = maxSpeed;
+
+            playerX = playerX + Math.cos(ang) * (l/50)
+            playerY = playerY + Math.sin(ang) * (l/50)
+
+            //drawing code
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            context.clearRect(0,0, canvas.width, canvas.height)
+
+            context.fillStyle = "rgb(200,0,0)";
+
+            // circle1
+            context.arc(playerX,playerY,radius,0,Math.PI*2,true); 
+            context.fill();
+
+            requestAnimationFrame(render);
         }
-
-        function render(){
-            var canvas = document.getElementById('canv');
-            if(canvas.getContext){
-                var context = canvas.getContext('2d');
-                var radius = 50;
-                // cursorX = 75;
-                // cursorY = 75;
-                //drawing code
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                context.clearRect(0,0, canvas.width, canvas.height)
-
-                context.fillStyle = "rgb(200,0,0)";
-
-                // circle1
-                context.arc(cursorX,cursorY,radius,0,Math.PI*2,true); 
-                context.fill();
-
-                //rect1
-                // context.fillRect(10,10,55,50);
-                requestAnimationFrame(render);
-            }
-            else{
-                context.innerHTML("This game requires a newer browser")
-            }
+        else{
+            context.innerHTML("This game requires a newer browser")
         }
-        
-        render()
+    }
+    
+    render()
 
-        })
-        </script>
-    </body>
+    
+
+    })
+    </script>
+</body>
 </html>
-
-
-<!-- var cursorX = 666;
-var cursorY = 666;
-var circle = document.querySelector(".circle")
-//document.querySelector("body").innerHTML = circle
-
-document.onmousemove = function(e){
-    
-    
-    cursorX = e.pageX;
-    cursorY = e.pageY;
-    render();
-
-}
-
-function render() {
-    
-    
-    requestAnimationFrame(render);
-}
-
-
-function distance(x1, y1, x2, y2)
-{
-  var xs = 0;
-  var ys = 0;
- 
-  xs = x1 - x2;
-  xs = xs * xs;
- 
-  ys = y1 - y2;
-  ys = ys * ys;
- 
-  return Math.sqrt( xs + ys );
-}
-
-
-speed = distance/100 -->
