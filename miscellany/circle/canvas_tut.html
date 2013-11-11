@@ -6,6 +6,7 @@
 <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
 </head>
 <body>
+    <div id="info"></div>
     <canvas id="canv"></canvas>
     <script type="text/javascript">
     console.log(window);
@@ -16,6 +17,41 @@
         var playerX = 0;
         var playerY = 0;
         var maxSpeed = 400;
+        var gridCoord = [];
+        var gridWidth = 100;
+        var info = document.getElementById('info');
+        var currentCoord = null;
+        var canvas = document.getElementById('canv');
+        var context = canvas.getContext('2d');
+
+
+    var Coord = {
+        "x": 0,
+        "y": 0,
+        "angle": null,
+
+        drawAngle: function(){
+            context.beginPath();
+            //context.moveTo(this.x,this.y);
+            context.moveTo(200,200);
+            context.lineTo((200+Math.cos(this.angle)*75),200+Math.sin(this.angle)*75);
+            context.strokeStyle="#000000";
+            context.stroke();
+        },
+        updateAngle: function(angle){
+            //needs to get a list of angles and average them
+            this.angle = angle;
+        },
+    };
+
+    function initializeCoord(coordX,coordY,angle){
+            Empty = function(){};
+            Empty.prototype = Coord;
+            coord = new Empty();
+            coord.x = coordX;
+            coord.y = coordY;
+            return coord;
+    }
 
     this.onmousemove = function(e){
         cursorX = e.pageX;
@@ -37,18 +73,24 @@
     }
 
     function render(){
-        var canvas = document.getElementById('canv');
+        // var canvas = document.getElementById('canv');
         if(canvas.getContext){
 
-            var context = canvas.getContext('2d');
+            // var context = canvas.getContext('2d');
             var radius = 50;
 
             ang = getDirection(playerX, playerY, cursorX, cursorY);
             l = getDistance(playerX, playerY, cursorX, cursorY);
-            if (l > maxSpeed) l = maxSpeed;
+            if (l > maxSpeed) l = maxSpeed;//do not exceed max speed
 
-            playerX = playerX + Math.cos(ang) * (l/50)
-            playerY = playerY + Math.sin(ang) * (l/50)
+            // player is never directly at cursor!
+            if (l > 1){
+                playerX = playerX + Math.cos(ang) * (l/25);
+                playerY = playerY + Math.sin(ang) * (l/25);
+
+                //l/25 is the velocity
+                //.cos and .sin of the angle(direction)
+            }            
 
             //drawing code
             canvas.width = window.innerWidth;
@@ -61,6 +103,19 @@
             context.arc(playerX,playerY,radius,0,Math.PI*2,true); 
             context.fill();
 
+            if (currentCoord === null){
+
+                currentCoordX = Math.floor(playerX/gridWidth);
+                currentCoordY = Math.floor(playerY/gridWidth);
+                currentCoord = initializeCoord(currentCoordX, currentCoordY, ang);
+            }
+
+            //each frame, log ang into gridCoords
+            currentCoord.updateAngle(ang);
+            currentCoord.drawAngle();
+
+            info.innerHTML = (currentCoord.x + ", " + currentCoord.y);
+
             requestAnimationFrame(render);
         }
         else{
@@ -69,10 +124,23 @@
     }
     
     render()
-
-    
-
     })
+
+//get the intercept points on entrance and exit and time it took to pass through
+//if ((playerX % gridWidth = 0) || (playerY % gridWidth = 0))// passing over boundary
+{
+    //previousCoords second point = first point
+    //second point = (playerX, playerY)
+    //duration = time delta between first and second points
+    //set duration counter to zero
+    //previousCoord's vector (entrance point, exit point, duration??)
+
+} 
+//add each vector to a list
+//get average of all vectors and assign it to a variable
+//vector length of each vector in list slowly decreses to zero
+//once it's at zero, remove it from the list
+
     </script>
 </body>
 </html>
