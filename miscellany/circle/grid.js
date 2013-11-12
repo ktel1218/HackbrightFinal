@@ -82,14 +82,12 @@ function main(){
             context.strokeStyle="#000000";
             context.stroke();
         },
-        updateEnterExits: function(enterExit){
+
+
+        updateAngle: function(){
             //give an x and y
             var sumX = 0;
             var sumY = 0;
-            console.log(this.enterExits);
-            console.log(enterExit);
-            this.enterExits.push(enterExit);
-            console.log(this.enterExits);
             for (var i = 0; i < this.enterExits.length; i++){
                 sumX += this.enterExits[i][0];
                 sumY += this.enterExits[i][1];
@@ -97,6 +95,10 @@ function main(){
                 sumY /= this.enterExits.length;
             }
             this.angle = getDirection(this.x, this.y, sumX, sumY);
+        },
+        drawSquare: function(){
+            context.fillStyle="rgba(200,50,0,.5)";
+            context.fillRect(this.x,this.y,gridSize,gridSize);
         },
     };
 
@@ -154,30 +156,17 @@ function main(){
 
     function animate(){
         char1.move();
-        // console.log(char1.x % gridSize);
-        if ((Math.floor(char1.x) % gridSize === 0)||(Math.floor(char1.x) % gridSize === 0)){
-            previousCoord = currentCoord;
-            enter = exit;
-            exit = [char1.x, char1.y];
-            enterExit = [exit[0]-enter[0], exit[1]-enter[1]];
-            console.log(enterExit);
-            coordX = Math.floor(char1.x/gridSize);
-            coordY = Math.floor(char1.y/gridSize);
-            currentCoord = coordPlane[coordX][coordY];
-            previousCoord.updateEnterExits(enterExit);
 
-        }
-        //update angles, render, blah blah
+        coordX = Math.floor(char1.x/gridSize);
+        coordY = Math.floor(char1.y/gridSize);
+        currentCoord = coordPlane[coordX][coordY];
+
     }
 
     function render(){
-        for (var i = 0; i < window.innerWidth/gridSize; i ++){
-            for (var j = 0; j < window.innerHeight/gridSize; j ++){
-                coordPlane[i][j].drawAngle();
-            }
-        }
         drawGrid(gridSize);
         char1.draw();
+        currentCoord.drawSquare();
     }
 
     function loop(){
