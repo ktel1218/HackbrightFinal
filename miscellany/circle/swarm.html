@@ -1,0 +1,182 @@
+<html>
+<head>
+<title>SWARM</title>
+<link href="static/css/main.css" rel="stylesheet">
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+</head>
+<body>
+    <canvas id="canv"></canvas>
+    <script>
+    $(document).ready(function(){
+        var canvas = document.getElementById("canv")
+        var context = canvas.getContext('2d');
+        var speed = 6.0;
+
+        
+
+        function prepCanvas(){
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+
+        var Boid = {
+            "r": 20,
+            "x": 100,
+            "y": 100,
+            "vX": 5,
+            "vY": 5,
+
+            draw: function(){
+
+                context.fillStyle = "rgb(0,200,100)";
+
+                // circle1
+                context.arc(this.x,this.y,this.r,0,Math.PI*2,true); 
+                context.fill();
+            },
+
+            move: function(){
+                this.x += this.vX;
+                this.y += this.vY;
+                if (this.x > canvas.width) {
+                    if (this.vX > 0){
+                        this.vX = -this.vX;
+                    }
+                }
+                if (this.y > canvas.height){
+                    if (this.vY > 0){
+                        this.vY = -this.vY;
+                    }
+                }
+                if (this.x < 0){
+                    if (this.vX < 0) {
+                        this.vX = -this.vX;
+                    }
+                }
+                if (this.y < 0){
+                    if (this.vY < 0){
+                        this.vY = -this.vY;
+                    }
+                }
+            },
+
+            norm: function(){
+                var z = Math.sqrt(this.vX*this.vX + this.vY * this.vY);
+                if (z<.001){
+                    this.vX = (Math.random() - .5) * speed;
+                    this.vY = (Math.random() - .5) * speed;
+                    this.norm();
+                }
+                else{
+                    z = speed /z;
+                    this.vX *= z;
+                    this.vY *= z;
+                }
+            }
+        };
+
+        function makeBoid(x,y){
+            Empty = function(){};
+            Empty.prototype = Boid;
+            boid = new Empty();
+            boid.x = x;
+            boid.y = y;
+            return boid;
+        }
+
+        Boids = [];
+
+        for (var i=0; i<20; i++){
+            var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
+            Boids.push(boid);
+        }
+
+        function align(boidList){
+            var alignment = .9; //between 0 and 1
+            var newVX = new Array(boidList.length);
+            var newVY = new Array(boidList.length);
+
+            for (var i = boidList.length-1; i>=0; i--){
+                var bi = boidList[i];
+                var bix = bi.x;
+                var biy = bi.y;
+                newVX[i] = 0;
+                newVY[i] = 0;
+                for(var j = boidList.length-1; j>=0; j--){
+                    //check distance between each boid and all other boids
+                    //give each boid two arrays that include
+                    //new valocities, old velocities divided by distance
+                    //between boid and all other boids and alignment8
+                    var bj = boidList[j];
+                    var dx = bj.x - bix;
+                    var dy = bj.y - biy;
+                    var d = Math.sqrt(dx*dx+dy*dy); 
+                    //(distance between ALL, just need locals)
+                    //add to the weighted sum (??)
+                    newVX[i] += (bj.vX/(d+alignment));
+                    newVY[i] += (bj.vY/(d+alignment));
+                }
+            }
+            for (var i = boidList.length-1; i>=0; i--){
+                boidList[i].vX = newVX[i];
+                boidList[i].vY = newVY[i];
+            }
+        }
+
+        function bounce(boidList){
+            var bounceRadius = 2 * Boid.r; //diameter
+            bounceRadius = bounceRadius*bounceRadius //doubled
+
+            for(var i=boidList.length-1; i>=0; i--){
+                var bi = boidList[i];
+                var bix = bi.x;
+                var biy = bi.y;
+                for(var j=i-1; j>=0; j--){
+                    var bj = boidList[j];
+                    var bjx = bj.x;
+                    var bjy = bj.y;
+                    var dx = bjx - bix;
+                    var dy = bjy - biy;
+                    var d = dx*dx+dy*dy;
+                    if (d < bounceRadius){
+                        bj.vX = dy;
+                        bj.vY = dx;
+                        bi.vX = -dx;
+                        bi.vY = -dy;
+                    }
+                }
+            }
+        }
+
+        function render(){
+            for (var i=0; i<Boids.length; i++){
+                Boids[i].draw();
+            }
+        }
+
+        function animate(){
+            bounce(Boids);
+            align(Boids);
+            for (var i=0; i<Boids.length; i++){
+                Boids[i].norm();
+                Boids[i].move();
+            }
+        }
+
+        function loop(){
+            prepCanvas();
+            animate();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+
+        loop();
+
+    })
+    </script>
+</body>
+</html>
