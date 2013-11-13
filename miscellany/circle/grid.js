@@ -5,6 +5,7 @@ function main(){
     var cursorY;
     var maxSpeed = 400;
     var gridSize = 75;
+    var entrance;
 
     // var speed = 6.0;
 
@@ -34,11 +35,6 @@ function main(){
         return Math.atan2(deltaY,deltaX);
     }
 
-    function getTimeDelta(time1, time2)
-    {
-        return time1 - time2;
-    }
-
     var Char = {
         "x": 0,
         "y": 0,
@@ -54,9 +50,6 @@ function main(){
                 this.x = this.x + Math.cos(ang) * (l/25);
                 this.y = this.y + Math.sin(ang) * (l/25);
             //if player is within 1 px of cursor, stop.
-
-                //l/25 is the velocity
-                //.cos and .sin of the angle(direction)
             }
         },
 
@@ -71,30 +64,48 @@ function main(){
     var Coord = {
         "x": 0,
         "y": 0,
-        "enterExits": [],
-        "angle": 0,
+        "centerX": this.x + (gridSize/2),
+        "centerY": this.y + (gridSize/2),
+        "xys": [],
+        "avgAngle": 0,
+
 
         drawAngle: function(){
             context.beginPath();
-            //context.moveTo(this.x,this.y);
             context.moveTo(this.x,this.y);
-            context.lineTo((this.x+Math.cos(this.angle)*75),this.y+Math.sin(this.angle)*75);
+            context.lineTo((this.x+Math.cos(this.avgAngle)*75),this.y+Math.sin(this.avgAngle)*75);
             context.strokeStyle="#000000";
             context.stroke();
         },
 
 
-        updateAngle: function(){
-            //give an x and y
+        updateAngle: function(charX, charY){
+            //give an x and y (will also need velocity)
             var sumX = 0;
             var sumY = 0;
-            for (var i = 0; i < this.enterExits.length; i++){
-                sumX += this.enterExits[i][0];
-                sumY += this.enterExits[i][1];
-                sumX /= this.enterExits.length;
-                sumY /= this.enterExits.length;
+            // console.log(sumX);
+            
+            if (this.xys.length>20){
+                this.xys.shift();
             }
-            this.angle = getDirection(this.x, this.y, sumX, sumY);
+            else{
+                this.xys.push([charX, charY]);
+            }
+            if (this.xys.length > 1){
+                for (var i = 0; i < this.xys.length; i++){
+                    
+                    sumX += this.xys[i][0];
+                    sumY += this.xys[i][1];
+                    sumX /= this.xys.length;
+                    sumY /= this.xys.length;
+                }
+
+                deltaY = sumY - (this.y+(gridSize/2));
+                deltaX = sumX - (this.x+(gridSize/2));
+            }
+            
+            this.avgAngle = Math.atan2(sumY,sumX);
+
         },
         drawSquare: function(){
             context.fillStyle="rgba(200,50,0,.5)";
@@ -160,10 +171,16 @@ function main(){
         coordX = Math.floor(char1.x/gridSize);
         coordY = Math.floor(char1.y/gridSize);
         currentCoord = coordPlane[coordX][coordY];
+        currentCoord.updateAngle(char1.x, char1.y);
 
     }
 
     function render(){
+        for (var i = 0; i < window.innerWidth/gridSize; i ++){
+            for (var j = 0; j < window.innerHeight/gridSize; j ++){
+                coordPlane[i][j].drawAngle();
+            }
+        }
         drawGrid(gridSize);
         char1.draw();
         currentCoord.drawSquare();
