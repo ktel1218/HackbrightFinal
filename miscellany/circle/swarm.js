@@ -4,6 +4,7 @@ function main(){
     var context = canvas.getContext('2d');
     var speed = 6.0;
     var wallForceFactor = 3;
+    var boids = [];
 
     function prepCanvas(){
         canvas.width = window.innerWidth;
@@ -61,8 +62,8 @@ function main(){
         "r": 10,
         "x": 100,
         "y": 100,
-        "vX": 2,
-        "vY": 2,
+        // "vX": -6,
+        // "vY": -6,
 
         draw: function(){
 
@@ -74,50 +75,28 @@ function main(){
         },
 
         move: function(){
-            this.x += this.vX;
-            this.y += this.vY;
-            if (this.x > canvas.width) {
-                if (this.vX > 0){
-                    this.vX = -this.vX;
-                }
-            }
-            if (this.y > canvas.height){
-                if (this.vY > 0){
-                    this.vY = -this.vY;
-                }
-            }
-            if (this.x < 0){
-                if (this.vX < 0) {
-                    this.vX = -this.vX;
-                }
-            }
-            if (this.y < 0){
-                if (this.vY < 0){
-                    this.vY = -this.vY;
-                }
-            }
 
             var d = computeForceVector(this, boids); //dont have this yet
             if (getMagnitude(d) > 0.00002){//normalize movement
                 d = normalize(d);
-                this.x += d.x;
-                this.y += d.y;
+                this.x += d.x *5;
+                this.y += d.y * 5;
             }
         },
 
-        norm: function(){
-            var z = Math.sqrt(this.vX*this.vX + this.vY * this.vY);
-            if (z<0.001){
-                this.vX = (Math.random() - 0.5) * speed;
-                this.vY = (Math.random() - 0.5) * speed;
-                this.norm();
-            }
-            else{
-                z = speed /z;
-                this.vX *= z;
-                this.vY *= z;
-            }
-        }
+        // norm: function(){
+        //     var z = Math.sqrt(this.vX*this.vX + this.vY * this.vY);
+        //     if (z<0.001){
+        //         this.vX = (Math.random() - 0.5) * speed;
+        //         this.vY = (Math.random() - 0.5) * speed;
+        //         this.norm();
+        //     }
+        //     else{
+        //         z = speed /z;
+        //         this.vX *= z;
+        //         this.vY *= z;
+        //     }
+        // }
     };
 
     function makeBoid(x,y){
@@ -129,7 +108,7 @@ function main(){
         return boid;
     }
 
-    boids = [];
+    
 
     for (var i=0; i<20; i++){
         var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
@@ -151,8 +130,8 @@ function main(){
 
     function computeWallForce(boid){
         var velocity = {x: 0, y: 0};
-        velocity.x = 1 / (boid.x * boid.x) - 1 / (canvas.width - boid.x) * (canvas.width - boid.x);//set x force to the 1 divided by the square of the boids distance from the x wall (stay in the middle, move violently away)
-        velocity.y = 1 / (boid.y * boid.y) - 1 / (canvas.height - boid.y) * (canvas.width - boid.y);//same for the y
+        velocity.x = 1 / (boid.x * boid.x) - 1 / ((canvas.width - boid.x) * (canvas.width - boid.x));//set x force to the 1 divided by the square of the boids distance from the x wall (stay in the middle, move violently away)
+        velocity.y = 1 / (boid.y * boid.y) - 1 / ((canvas.height - boid.y) * (canvas.height - boid.y));//same for the y
         velocity.x *= wallForceFactor;
         velocity.y *= wallForceFactor;
 
@@ -187,7 +166,7 @@ function main(){
         // bounce(boids);
         // align(boids);
         for (var i=0; i<boids.length; i++){
-            boids[i].norm();
+            // boids[i].norm();
             boids[i].move();
         }
         // for(var i = 0; i < boids.length; i++){
