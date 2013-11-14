@@ -33,7 +33,7 @@ Game.EvasiveManeuversPlayerAI = function(units, asteroids){
         return velocity;
     }
 
-    function computerAsteroidForce(ship, asteroids){
+    function computeAsteroidForce(ship, asteroids){
         var velocity = {x: 0, y: 0};
         //for each asteroid look at how much force it exerts on the ship and get a vector of the sum of those forces and return it
         for(var i = 0; i < asteroids.length; i ++){

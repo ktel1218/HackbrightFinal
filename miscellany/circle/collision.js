@@ -4,7 +4,6 @@ function main(){
     var cursorX;
     var cursorY;
     var gridSize = 75;
-    var entrance;
     var defaultMaxSpeed = 400;
 
     // var speed = 6.0;

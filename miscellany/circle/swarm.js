@@ -4,7 +4,101 @@ function main(){
     var context = canvas.getContext('2d');
     var speed = 6.0;
     var wallForceFactor = 3;
+    var playerForceFactor = 5;
     var boids = [];
+    var defaultMaxSpeed = 400;
+    var cursorX;
+    var cursorY;
+    var message = [];
+
+    this.onmousemove = function(e){
+        cursorX = e.pageX;
+        cursorY = e.pageY;
+    };
+
+    this.onclick = function(e){
+        console.log(message);
+    };
+
+    var Char = {
+        "x": 0,
+        "y": 0,
+        "radius":20,//health
+        "maxSpeed": defaultMaxSpeed,
+        "speed": 0,
+
+        move: function(){
+            var ang = getDirection(this.x, this.y, cursorX, cursorY);
+            this.speed = getDistance(this.x, this.y, cursorX, cursorY);
+
+            // player is never directly at cursor!
+            if(this.speed > 1){
+                this.x = this.x + Math.cos(ang) * (this.speed/25);
+                this.y = this.y + Math.sin(ang) * (this.speed/25);
+            //if player is within 1 px of cursor, stop.
+            }
+
+            if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
+
+        },
+
+        draw: function(){
+            context.beginPath();
+            context.fillStyle = "rgba(200,0,200,.85)";
+            context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
+            context.fill();
+        },
+
+
+        touch: function(object){
+            
+            if (object.radius > 3){
+                this.radius += 0.1;
+                object.radius -= 0.2;
+            }
+        }
+    };
+
+    var Boid = {
+        "r": 10,
+        "x": 100,
+        "y": 100,
+
+        draw: function(){
+            context.fillStyle = "rgb(0,200,100)";
+
+            context.arc(this.x,this.y,this.r,0,Math.PI*2,true);
+            context.fill();
+        },
+
+        move: function(){
+
+            var d = computeForceVector(this, boids, char1);
+            if (getMagnitude(d) > 0.00002){//reduce sensitivity
+                d = normalize(d);
+                this.x += d.x *5;
+                this.y += d.y * 5;
+            }
+        },
+    };
+
+    function makeChar(x,y){
+        Empty = function(){};
+        Empty.prototype = Char;
+        charA = new Empty();
+        charA.x = x;
+        charA.y = y;
+        return charA;
+    }
+
+    function makeBoid(x,y){
+        Empty = function(){};
+        Empty.prototype = Boid;
+        boid = new Empty();
+        boid.x = x;
+        boid.y = y;
+        return boid;
+    }
 
     function prepCanvas(){
         canvas.width = window.innerWidth;
@@ -12,16 +106,28 @@ function main(){
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    function getMagnitude(vector)
+    function getDistance(x1, y1, x2, y2)
     {
+        squareX = Math.pow((x1-x2),2);
+        squareY = Math.pow((y1-y2),2);
+        return Math.sqrt(squareX + squareY);
+    }
+
+    function getDirection(x1, y1, x2, y2)
+    {
+        deltaY = y2 - y1;
+        deltaX = x2 - x1;
+        return Math.atan2(deltaY,deltaX);
+    }
+
+    function getMagnitude(vector){
         var x = vector.x;
         var y = vector.y;
         var n = Math.sqrt(x*x + y*y);
         return Math.abs(n);
     }
 
-    function getDirectionTo(fromObject, toObject)
-    {
+    function getDirectionTo(fromObject, toObject){
         var x1 = fromObject.x;
         var y1 = fromObject.y;
         var x2 = toObject.x;
@@ -37,11 +143,13 @@ function main(){
         return direction;
     }
 
-    function sumVectors(vector1, vector2)
-    {
-        var sumX = vector1.x + vector2.x;
-        var sumY = vector1.y + vector2.y;
-
+    function sumVectors(listOfVectors){
+        var sumX = 0;
+        var sumY = 0;
+        for (var i = 0; i < listOfVectors.length; i++){
+            sumX += listOfVectors[i].x;
+            sumY += listOfVectors[i].y;
+        }
         var summedVector = {
             "x": sumX,
             "y": sumY,
@@ -56,63 +164,6 @@ function main(){
             "y": (vector.y/length),
         };
         return normalizedVector;
-    }
-
-    var Boid = {
-        "r": 10,
-        "x": 100,
-        "y": 100,
-        // "vX": -6,
-        // "vY": -6,
-
-        draw: function(){
-
-            context.fillStyle = "rgb(0,200,100)";
-
-            // circle1
-            context.arc(this.x,this.y,this.r,0,Math.PI*2,true);
-            context.fill();
-        },
-
-        move: function(){
-
-            var d = computeForceVector(this, boids); //dont have this yet
-            if (getMagnitude(d) > 0.00002){//normalize movement
-                d = normalize(d);
-                this.x += d.x *5;
-                this.y += d.y * 5;
-            }
-        },
-
-        // norm: function(){
-        //     var z = Math.sqrt(this.vX*this.vX + this.vY * this.vY);
-        //     if (z<0.001){
-        //         this.vX = (Math.random() - 0.5) * speed;
-        //         this.vY = (Math.random() - 0.5) * speed;
-        //         this.norm();
-        //     }
-        //     else{
-        //         z = speed /z;
-        //         this.vX *= z;
-        //         this.vY *= z;
-        //     }
-        // }
-    };
-
-    function makeBoid(x,y){
-        Empty = function(){};
-        Empty.prototype = Boid;
-        boid = new Empty();
-        boid.x = x;
-        boid.y = y;
-        return boid;
-    }
-
-    
-
-    for (var i=0; i<20; i++){
-        var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
-        boids.push(boid);
     }
 
     function computePointForce(boid, obstacle){
@@ -138,11 +189,25 @@ function main(){
         return velocity;
     }
 
+    function computeCharForce(boid, player){
+        var velocity = {x: 0, y: 0};
+        var force = computePointForce(boid, player);
+        velocity.x += force.x;
+        velocity.y += force.y;
+        velocity.x *= wallForceFactor;
+        velocity.y *= wallForceFactor;
+        return velocity;
+    }
+
     function computeOtherBoidForce(boid, boidList){
         var velocity = {x: 0, y:0};
         for(var i = 0; i < boidList.length; i++){//how do I avoid unit affecting itself? Duhhh object comparison 
             if(boid !== boidList[i]){//force would be infinite
             var force = computePointForce(boid, boidList[i]);
+            if (getMagnitude(force) < 0.00007){
+                force.x = -force.x;
+                force.y = -force.y;
+            }
             velocity.x += force.x;
             velocity.y += force.y;
             }
@@ -150,34 +215,34 @@ function main(){
         return velocity;
     }
 
-    function computeForceVector(boid, boidList){
+    function computeForceVector(boid, boidList, player){
         var vWall = computeWallForce(boid);
         var vBoids = computeOtherBoidForce(boid, boidList);
-        return sumVectors(vWall, vBoids);
+        var vChar = computeCharForce(boid, player);
+        message.push(vBoids);
+        return sumVectors([vWall, vBoids, vChar]);
+    }
+
+    //make char
+    char1 = makeChar(10,10);
+    //make boids
+    for (var i=0; i<30; i++){
+        var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
+        boids.push(boid);
+    }
+
+    function animate(){
+        char1.move();
+        for (var i=0; i<boids.length; i++){
+            boids[i].move();
+        }
     }
 
     function render(){
         for (var i=0; i<boids.length; i++){
             boids[i].draw();
         }
-    }
-
-    function animate(){
-        // bounce(boids);
-        // align(boids);
-        for (var i=0; i<boids.length; i++){
-            // boids[i].norm();
-            boids[i].move();
-        }
-        // for(var i = 0; i < boids.length; i++){
-        //     var d = computeForceVector(boids[i], boids); //dont have this yet
-        //     if (getMagnitude(d) > 0.00002){//normalize movement
-        //         d = normalize(d);
-        //         boids[i].x += d.x;
-        //         boids[i].y += d.y;
-        //         // commands.push(AI.createMoveCommand(boids[i], p));
-        //     }
-        // }
+        char1.draw();
     }
 
     function loop(){
@@ -188,5 +253,4 @@ function main(){
     }
 
     loop();
-
 }
