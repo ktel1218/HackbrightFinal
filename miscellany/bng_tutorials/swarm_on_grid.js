@@ -1,4 +1,3 @@
-    
 function main(){
     var canvas = document.getElementById("canv");
     var context = canvas.getContext('2d');
@@ -8,9 +7,11 @@ function main(){
     var wallForceFactor = 3;
     var playerForceFactor = 8;
     var defaultMaxSpeed = 400;
+    var gridSize = 50;
 
     var boids = [];
     var message = [];
+    var coordPlane = [];
 
     this.onmousemove = function(e){
         cursorX = e.pageX;
@@ -18,6 +19,7 @@ function main(){
     };
 
     this.onclick = function(e){
+        console.log(coordPlane[5][3].vector.x);
         console.log(message);
     };
 
@@ -27,8 +29,11 @@ function main(){
         "radius":20,//health
         "maxSpeed": defaultMaxSpeed,
         "speed": 0,
+        "forceFactor": 8,
 
         move: function(){
+
+            //rewrite to consolidate functions
             var ang = getDirection(this.x, this.y, cursorX, cursorY);
             this.speed = getDistance(this.x, this.y, cursorX, cursorY);
 
@@ -45,27 +50,21 @@ function main(){
 
         draw: function(){
             context.beginPath();
-            context.fillStyle = "rgba(200,0,200,.85)";
+            context.fillStyle = "rgba(200,0,200,0.85)";
             context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
             context.fill();
         },
-
-
     };
 
     var Boid = {
         "r": 10,
         "x": 100,
         "y": 100,
-
+        
         move: function(){
-
-            var d = computeForceVector(this, boids, char1);
-            if (getMagnitude(d) > 0.00002){//reduce sensitivity
-                d = normalize(d);
-                this.x += d.x *5;
-                this.y += d.y * 5;
-            }
+            var currentCoord = coordPlane[Math.floor(this.x/gridSize)][Math.floor(this.y/gridSize)];
+            this.x += currentCoord.vector.x;
+            this.y += currentCoord.vector.y;
         },
 
         draw: function(){
@@ -76,21 +75,64 @@ function main(){
         },
     };
 
-    function makeChar(x,y){
+    var Coord = {
+
+        "vector": {"x":0,"y":0},
+
+        drawSquare: function(){
+            context.fillStyle="rgba(200,50,0,.5)";
+            context.fillRect(this.x,this.y,gridSize,gridSize);
+        },
+
+        mapVectors: function(){
+            var d = computeForceVector(this, sprites);
+            // message.push("d.x: ", d.x);
+            if (getMagnitude(d) > 0.0000000000002){//reduce sensitivity
+                d = normalize(d);
+                this.vector.x = d.x;
+                this.vector.y = d.y;
+            }
+        }
+    };
+
+    function initCoord(coordX,coordY){
+            Empty = function(){};
+            Empty.prototype = Coord;
+            coord = new Empty();
+            coord.x = coordX;
+            coord.y = coordY;
+            coord.centerX = coordX + gridSize/2;
+            coord.centerY = coordY + gridSize/2;
+            return coord;
+    }
+
+    function initCoordPlane(){
+        for (var i = 0; i < window.innerWidth/gridSize; i ++){
+            coordPlane.push([]);
+            for (var j = 0; j < window.innerHeight/gridSize; j ++){
+                coord = initCoord(i*gridSize,j*gridSize);
+                coordPlane[i].push(coord);
+            }
+        }
+    }
+
+    function makeChar(x,y, radius){
         Empty = function(){};
         Empty.prototype = Char;
         charA = new Empty();
         charA.x = x;
         charA.y = y;
+        charA.radius = radius;
         return charA;
     }
 
-    function makeBoid(x,y){
+    function makeBoid(x,y, radius){
         Empty = function(){};
         Empty.prototype = Boid;
         boid = new Empty();
         boid.x = x;
         boid.y = y;
+        boid.radius = radius;
         return boid;
     }
 
@@ -160,12 +202,12 @@ function main(){
         return normalizedVector;
     }
 
-    function computePointForce(boid, obstacle){
-        var boidx = boid.x;
-        var boidy = boid.y;
-        var otherx = obstacle.x;
-        var othery = obstacle.y;
-        var direction = getDirectionTo(obstacle, boid);
+    function computePointForce(coord, sprite){
+        var coordx = coord.centerX;
+        var coordy = coord.centerY;
+        var otherx = sprite.x;
+        var othery = sprite.y;
+        var direction = getDirectionTo(sprite, coord);
         var magnitude = getMagnitude(direction);
         //return a vector in the direction of d
         direction.x *= 1/(magnitude * magnitude * magnitude);
@@ -173,67 +215,82 @@ function main(){
         return direction;
     }
 
-    function computeWallForce(boid){
+    function computeWallForce(coord){
         var velocity = {x: 0, y: 0};
 
-        //set x force to the 1 divided by the square of the boids distance from the x wall (stay in the middle, move violently away)
-        velocity.x = 1/(boid.x * boid.x) -
-                    1/((canvas.width - boid.x)*(canvas.width - boid.x));
+        //set x force to the 1 divided by the square of the coords distance from the x wall (stay in the middle, move violently away)
+        velocity.x = 1/Math.pow(coord.centerX,2) -
+                    1/Math.pow((canvas.width - coord.centerX),2);
         //same for the y        
-        velocity.y = 1 / (boid.y * boid.y) - 1 / ((canvas.height - boid.y) * (canvas.height - boid.y));
+        velocity.y = 1/Math.pow(coord.centerY,2) - 
+                    1/Math.pow((canvas.height - coord.centerY),2);        
         velocity.x *= wallForceFactor;
         velocity.y *= wallForceFactor;
 
         return velocity;
     }
 
-    function computeCharForce(boid, player){
+    function computeSpriteForce(coord, sprites){
         var velocity = {x: 0, y: 0};
-        var force = computePointForce(boid, player);
-        velocity.x += force.x;
-        velocity.y += force.y;
-        velocity.x *= playerForceFactor;
-        velocity.y *= playerForceFactor;
-        return velocity;
-    }
-
-    function computeOtherBoidForce(boid, boidList){
-        var velocity = {x: 0, y:0};
-        for(var i = 0; i < boidList.length; i++){
-        //avoid unit affecting itself, force would be infinite
-            if(boid !== boidList[i]){
-            var force = computePointForce(boid, boidList[i]);
-            var magnitude = getMagnitude(force);
-            if (magnitude > 0.00002 && magnitude < 0.00008){//can split
-                force.x = -force.x;
-                force.y = -force.y;
-            }
-            velocity.x += force.x;
-            velocity.y += force.y;
-            }
+        for(var i = 0; i < sprites.length; i++){
+            var force = computePointForce(boid, sprites[i]);
+            message.push(forcex);
+            velocity.x *= sprites[i].forceFactor;
+            velocity.y *= sprites[i].forceFactor;
         }
         return velocity;
     }
 
-    function computeForceVector(boid, boidList, player){
-        var vWall = computeWallForce(boid);
-        var vBoids = computeOtherBoidForce(boid, boidList);
-        var vChar = computeCharForce(boid, player);
-        return sumVectors([vWall, vBoids, vChar]);
+    function computeForceVector(coord, sprites){
+        var vWall = computeWallForce(coord);//infinite
+        var vSprites = computeSpriteForce(boid, sprites);//NaN
+        return sumVectors([vWall, vSprites]);
     }
 
-    //make char
-    char1 = makeChar(10,10);
+    //init
+    initCoordPlane();
+    var char1 = makeChar(10,10,30);
     //make boids
-    for (var i=0; i<25; i++){
-        var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
+    for (var i=0; i<4; i++){
+        var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300, 20);
         boids.push(boid);
     }
 
+//*******************************
+        var sprites = boids;
+        sprites.push(char1);
+
+        //**********************************
+
+
+    function drawGrid(gridSize){
+        for (var i = 1; i < window.innerWidth; i += gridSize){
+            context.beginPath();
+            context.moveTo(i,0);
+            context.lineTo(i,window.innerHeight);
+            context.stroke();
+        }
+        for (var j = 1; j < window.innerHeight; j += gridSize){
+            context.beginPath();
+            context.moveTo(0,j);
+            context.lineTo(window.innerWidth, j);
+            context.stroke();
+        }
+    }
+
     function animate(){
-        char1.move();
-        for (var i=0; i<boids.length; i++){
-            boids[i].move();
+        for (var i=0; i<coordPlane.length; i++){
+            for (var j=0; j<coordPlane[i].length; j++){
+                coordPlane[i][j].mapVectors();
+            }
+        }
+        // coordX = Math.floor(char1.x/gridSize);
+        // coordY = Math.floor(char1.y/gridSize);
+        // currentCoord = coordPlane[coordX][coordY];
+        // currentCoord.updateAngle(char1.x, char1.y);
+        // char1.move();
+        for (var k=0; k<boids.length; k++){
+            boids[k].move();
         }
     }
 
@@ -241,6 +298,8 @@ function main(){
         for (var i=0; i<boids.length; i++){
             boids[i].draw();
         }
+        drawGrid(gridSize);
+        // currentCoord.drawSquare();
         char1.draw();
     }
 

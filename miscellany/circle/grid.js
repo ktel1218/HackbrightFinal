@@ -5,9 +5,6 @@ function main(){
     var cursorY;
     var maxSpeed = 400;
     var gridSize = 75;
-    var entrance;
-
-    // var speed = 6.0;
 
     //get cursor's x and y all the time
     this.onmousemove = function(e){
@@ -163,7 +160,8 @@ function main(){
     initCoordPlane();
 
     var exit = [0,0];
-    var currentCoord = coordPlane[0][0];
+    var currentCoord = coordPlane[4][5];
+    console.log(currentCoord);
 
     function animate(){
         char1.move();
