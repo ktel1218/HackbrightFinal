@@ -78,14 +78,28 @@ function main(){
         },
 
         mapVectors: function(){
-            var d = computeForceVector(this, sprites);
+            var d = computeForceVector(this, char1);
             if (getMagnitude(d) > 0.00002){//reduce sensitivity
-                d = normalize(d);
+                // d = normalize(d);
                 this.vector = {
                     "x" : d.x,
                     "y" : d.y
                 };
             }
+        },
+        logVect: function(){
+            //print it
+            // vectorMessage = [];
+            // vectorMessage.push(this.vector.x);
+            // vectorMessage.push(this.vector.y);
+            // context.fillText(vectorMessage, this.centerX, this.centerY);
+            //draw it
+            // console.log(this.centerX, this.centerY);
+            // console.log(this.vector.x, this.vector.y);
+            context.beginPath();
+            context.moveTo(this.x, this.y);
+            context.lineTo(this.x + this.vector.x/25, this.y + this.vector.y/25);
+            context.stroke();
         }
     };
 
@@ -137,15 +151,13 @@ function main(){
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    function getDistance(x1, y1, x2, y2)
-    {
+    function getDistance(x1, y1, x2, y2){
         squareX = Math.pow((x1-x2),2);
         squareY = Math.pow((y1-y2),2);
         return Math.sqrt(squareX + squareY);
     }
 
-    function getDirection(x1, y1, x2, y2)
-    {
+    function getDirection(x1, y1, x2, y2){
         deltaY = y2 - y1;
         deltaX = x2 - x1;
         return Math.atan2(deltaY,deltaX);
@@ -173,25 +185,12 @@ function main(){
             "x": deltaX,
             "y": deltaY,
         };
-        // if (isNaN(fromObject.x) || isNaN(toObject.x)){
-        //     message.push(fromObject, toObject);
-        // }
+
+        // console.log(direction.y);
+
         return direction;
     }
 
-    function sumVectors(listOfVectors){
-        var sumX = 0;
-        var sumY = 0;
-        for (var i = 0; i < listOfVectors.length; i++){
-            sumX += listOfVectors[i].x;
-            sumY += listOfVectors[i].y;
-        }
-        var summedVector = {
-            "x": sumX,
-            "y": sumY,
-        };
-        return summedVector;
-    }
 
     function normalize(vector){
         var length = getMagnitude(vector);
@@ -199,6 +198,7 @@ function main(){
             "x": (vector.x/length),
             "y": (vector.y/length),
         };
+        // console.log(normalizedVector.x, normalizedVector.y);
         return normalizedVector;
     }
 
@@ -206,119 +206,46 @@ function main(){
         var direction = getDirectionTo(sprite, coord);
         var magnitude = getMagnitude(direction);
         //return a vector in the direction of d
-        var normalizedMagnitude = 1/Math.pow(magnitude,3);
-        direction.x *= normalizedMagnitude;
-        direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
+        // var normalizedMagnitude = 1/Math.pow(magnitude,3);
+        // direction.x *= normalizedMagnitude;
+        // direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
+        // console.log(direction.x, direction.y);
+        direction.x *= magnitude;
+        direction.y *= magnitude;
         return direction;
     }
 
-    function computeWallForce(coord){
+
+    function computeForceVector(coord, sprite){
         var velocity = {x: 0, y: 0};
-
-        //set x force to the 1 divided by the square of the coords distance from the x wall (stay in the middle, move violently away)
-        velocity.x = 1/Math.pow(coord.centerX,2) -
-                    1/Math.pow((canvas.width - coord.centerX),2);
-        //same for the y
-        velocity.y = 1/Math.pow(coord.centerY,2) -
-                    1/Math.pow((canvas.height - coord.centerY),2);
-        velocity.x *= wallForceFactor;
-        velocity.y *= wallForceFactor;
-
+        var force = computePointForce(coord, sprite);
+        velocity.x += force.x;
+        velocity.y += force.y;
+        // console.log(velocity.x, velocity.y);
         return velocity;
     }
 
-    function computeSpriteForce(coord, sprites){
-        var velocity = {x: 0, y: 0};
-        for(var i = 0; i < sprites.length; i++){
-            var force = computePointForce(coord, sprites[i]);
-            console.log(force);
-            if(isNaN(force.x)){
-                force.x = 0;
-            }
-            if(isNaN(force.y)){
-                force.y = 0;
-            }
-            velocity.x += force.x;
-            velocity.y += force.y;
-            velocity.x *= sprites[i].forceFactor;
-            velocity.y *= sprites[i].forceFactor;
-        }
-        return velocity;
-    }
-
-    function computeForceVector(coord, sprites){
-        var vWall = computeWallForce(coord);//infinite
-        var vSprites = computeSpriteForce(boid, sprites);//NaN
-        // return vSprites;
-        return sumVectors([vWall, vSprites]);
-    }
-
-    //init
+    // var coord1 = initCoord(200,200);
     initCoordPlane();
 
     var char1 = makeChar(50+Math.random()*500, 50+Math.random()*300,25);
-    console.log(char1);
-    //make boids
-    // var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300, 15);
-    // console.log(boid);
-    for (var i=0; i<4; i++){
-        var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300, 15);
-        // boids.push(boid);
-        // console.log(boid);
-        sprites.push(boid);
-    }
-
-//*******************************
-        // sprites.push(boids[2]);
-        sprites.push(char1);
-        // sprites.push(boid);
-
-        // console.log(sprites);
-
-        //**********************************
-
-
-    function drawGrid(gridSize){
-        for (var i = 1; i < window.innerWidth; i += gridSize){
-            context.beginPath();
-            context.moveTo(i,0);
-            context.lineTo(i,window.innerHeight);
-            context.stroke();
-        }
-        for (var j = 1; j < window.innerHeight; j += gridSize){
-            context.beginPath();
-            context.moveTo(0,j);
-            context.lineTo(window.innerWidth, j);
-            context.stroke();
-        }
-    }
 
     function animate(){
-        console.log(coordPlane[0][0].vector.x == coordPlane[5][5].vector.x);
-        for (var i=0; i<coordPlane.length; i++){
-            for (var j=0; j<coordPlane[i].length; j++){
+        char1.move();
+        for (var i = 0; i < coordPlane.length; i++) {
+            for (var j = 0; j < coordPlane[i].length; j++) {
                 coordPlane[i][j].mapVectors();
-                // message.push(coordPlane[i][j].vector.x,coordPlane[i][j].vector.y);
             }
-        }
-        // coordX = Math.floor(char1.x/gridSize);
-        // coordY = Math.floor(char1.y/gridSize);
-        // currentCoord = coordPlane[coordX][coordY];
-        // currentCoord.updateAngle(char1.x, char1.y);
-        // char1.move();
-        for (var k=0; k<sprites.length; k++){
-            sprites[k].move();
         }
     }
 
     function render(){
-        for (var i=0; i<sprites.length; i++){
-            sprites[i].draw();
+        char1.draw();
+        for (var i = 0; i < coordPlane.length; i++) {
+            for (var j = 0; j < coordPlane[i].length; j++) {
+                coordPlane[i][j].logVect();
+            }
         }
-        // currentCoord.drawSquare();
-        // char1.draw();
-        drawGrid(gridSize);
-
     }
 
     function loop(){

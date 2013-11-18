@@ -61,15 +61,17 @@ function main(){
         move: function(){
 
             var d = computeForceVector(this, boids, char1);
-            if (getMagnitude(d) > 0.00002){//reduce sensitivity
-                d = normalize(d);
-                this.x += d.x *5;
-                this.y += d.y * 5;
+            if (getMagnitude(d) > 0.00008){//reduce sensitivity
+                // d = normalize(d);
+                this.x += d.x * 10000;
+                this.y += d.y * 10000;
             }
         },
 
         draw: function(){
+
             context.fillStyle = "rgb(0,200,100)";
+            context.beginPath();
 
             context.arc(this.x,this.y,this.r,0,Math.PI*2,true);
             context.fill();
