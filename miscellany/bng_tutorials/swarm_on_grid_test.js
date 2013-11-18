@@ -7,7 +7,7 @@ function main(){
     var wallForceFactor = 3;
     var playerForceFactor = 8;
     var defaultMaxSpeed = 400;
-    var gridSize = 50;
+    var gridSize = 10;
 
     var message = [];
     var coordPlane = [];
@@ -85,6 +85,7 @@ function main(){
                     "x" : d.x,
                     "y" : d.y
                 };
+                // console.log("Logging!");
             }
         },
         logVect: function(){
@@ -123,6 +124,32 @@ function main(){
                 coordPlane[i].push(coord);
             }
         }
+    }
+
+    function getSurroundingCoords(x,y,rInfluence){
+        // var currentCoord = getCurrentCoord(x,y);
+        var listOfCoordsSquare = [];
+        var listOfCoordsCircle = [];
+        var iMin = Math.round((x - rInfluence)/gridSize);
+        if (iMin < 0) iMin = 0;
+        var iMax = Math.round((x + rInfluence)/gridSize);
+        if (iMax > Math.round(canvas.width/gridSize)) iMax = Math.round(canvas.width/gridSize);
+        var jMin = Math.round((y - rInfluence)/gridSize);
+        if (jMin < 0) jMin = 0;
+        var jMax = Math.round((y + rInfluence)/gridSize);
+        if (jMax > Math.round(canvas.height/gridSize)) jMax = Math.round(canvas.height/gridSize);
+        for (var i = iMin; i<= iMax; i++){
+            for (var j = jMin; j <= jMax; j++){
+                var x1 = coordPlane[i][j].x;
+                var y1 = coordPlane[i][j].y;
+                var distance = getDistance(x1, y1, x,y);
+                console.log(rInfluence, distance);
+                if (rInfluence > distance){
+                    listOfCoordsCircle.push(coordPlane[i][j]);
+                }
+            }
+        }
+        return listOfCoordsCircle;
     }
 
     function makeChar(x,y, radius){
@@ -232,10 +259,10 @@ function main(){
 
     function animate(){
         char1.move();
-        for (var i = 0; i < coordPlane.length; i++) {
-            for (var j = 0; j < coordPlane[i].length; j++) {
-                coordPlane[i][j].mapVectors();
-            }
+        var closestCoords = getSurroundingCoords(char1.x,char1.y,50);
+        for (var i = 0; i < closestCoords.length; i++) {
+            closestCoords[i].mapVectors();
+            // console.log("hello?");
         }
     }
 
