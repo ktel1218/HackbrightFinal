@@ -12,6 +12,7 @@ function main(){
     var message = [];
     var coordPlane = [];
     var sprites = [];
+    var affectedCoords = [];
 
     this.onmousemove = function(e){
         cursorX = e.pageX;
@@ -53,14 +54,15 @@ function main(){
 
         imprint: function(){
             var closestCoords = getSurroundingCoords(this.x,this.y,this.influence);
+            affectedCoords.push.apply(affectedCoords, closestCoords);
             for (var i = 0; i < closestCoords.length; i++) {
                 var coordX = closestCoords[i].x;
                 var coordY = closestCoords[i].y;
                 var d = computeForceVector(closestCoords[i], this);
                 if (getMagnitude(d) > 0.00002){//reduce sensitivity
                     d = normalize(d);
-                    if (coordX != d.x)closestCoords[i].vector.x += d.x;
-                    if (coordY != d.y)closestCoords[i].vector.y += d.y;
+                    closestCoords[i].vector.x += d.x;
+                    closestCoords[i].vector.y += d.y;
                 }
             }
         }
@@ -73,8 +75,11 @@ function main(){
         
         move: function(){
             var currentCoord = coordPlane[Math.round(this.x/gridSize)][Math.round(this.y/gridSize)];
-            this.x += currentCoord.vector.x /40;
-            this.y += currentCoord.vector.y /40;
+            wallVX = 1/Math.sqrt(this.x,2) - 1/Math.sqrt((canvas.width - this.x),2);
+            wallVY = 1/Math.sqrt(this.y,2) - 1/Math.sqrt((canvas.height - this.y),2);
+
+            this.x += currentCoord.vector.x/10;
+            this.y += currentCoord.vector.y/10;
         },
 
         draw: function(){
@@ -86,14 +91,15 @@ function main(){
 
         imprint: function(){
             var closestCoords = getSurroundingCoords(this.x,this.y,this.influence);
+            affectedCoords.push.apply(affectedCoords, closestCoords);
             for (var i = 0; i < closestCoords.length; i++) {
                 var coordX = closestCoords[i].x;
                 var coordY = closestCoords[i].y;
                 var d = computeForceVector(closestCoords[i], this);
                 if (getMagnitude(d) > 0.00002){//reduce sensitivity
                     d = normalize(d);
-                    if (coordX != d.x)closestCoords[i].vector.x += d.x;
-                    if (coordY != d.y)closestCoords[i].vector.y += d.y;
+                    closestCoords[i].vector.x += d.x;
+                    closestCoords[i].vector.y += d.y;
                 }
             }
         }
@@ -253,12 +259,12 @@ function main(){
         var direction = getDirectionTo(sprite, coord);
         var magnitude = getMagnitude(direction);
         //return a vector in the direction of d
-        // var normalizedMagnitude = 1/Math.pow(magnitude,3);
-        // direction.x *= normalizedMagnitude;
-        // direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
+        var normalizedMagnitude = 1/Math.pow(magnitude,3);
+        direction.x *= normalizedMagnitude;
+        direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
         // console.log(direction.x, direction.y);
-        direction.x *= magnitude;
-        direction.y *= magnitude;
+        // direction.x *= magnitude;
+        // direction.y *= magnitude;
         return direction;
     }
 
@@ -270,6 +276,21 @@ function main(){
         velocity.y += force.y;
         // console.log(velocity.x, velocity.y);
         return velocity;
+    }
+
+    function degradeVectors(coordList){
+        for (var i = 0; i < coordList.length; i++) {
+            if (Math.abs(coordList[i].vector.x)<0.8 && Math.abs(coordList[i].vector.y)<0.8){
+                coordList[i].vector.x = 0;
+                coordList[i].vector.y = 0;
+                coordList.splice(i,0);
+            }
+            else {
+                coordList[i].vector.x /= 1.00005;
+                coordList[i].vector.y /= 1.00005;
+            }
+            // coordList[i].vector *= magnitude;
+        }
     }
 
     // var coord1 = initCoord(200,200);
@@ -287,6 +308,7 @@ function main(){
         boid1.imprint();
         char1.move();
         boid1.move();
+        degradeVectors(affectedCoords);
 
     }
 
