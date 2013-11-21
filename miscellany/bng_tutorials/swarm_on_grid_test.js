@@ -1,8 +1,10 @@
 function main(){
     var canvas = document.getElementById("canv");
     var context = canvas.getContext('2d');
-    var cursorX;
-    var cursorY;
+    var cursor = {
+        "x": 0,
+        "y": 0
+    };
 
     var wallForceFactor = 3;
     var playerForceFactor = 8;
@@ -14,9 +16,10 @@ function main(){
     var sprites = [];
     var affectedCoords = [];
 
+
     this.onmousemove = function(e){
-        cursorX = e.pageX;
-        cursorY = e.pageY;
+        cursor.x = e.pageX;
+        cursor.y = e.pageY;
     };
 
     this.onclick = function(e){
@@ -31,17 +34,18 @@ function main(){
         move: function(){
 
             //rewrite to consolidate functions
-            var ang = getDirection(this.x, this.y, cursorX, cursorY);
-            this.speed = getDistance(this.x, this.y, cursorX, cursorY);
+            this.vector = getDirectionTo(this, cursor);
+            var speed = getMagnitude(this.vector);
 
+            if (speed > this.maxSpeed) speed = this.maxSpeed;
             // player is never directly at cursor!
-            if(this.speed > 1){
-                this.x = this.x + Math.cos(ang) * (this.speed/25);
-                this.y = this.y + Math.sin(ang) * (this.speed/25);
+            if(speed > 1){
+                this.x = this.x + this.vector.x/25;
+                this.y = this.y + this.vector.y/25;
             //if player is within 1 px of cursor, stop.
             }
 
-            if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
+            //do not exceed max speed
 
         },
 
@@ -74,17 +78,31 @@ function main(){
         "influence":30,
         
         move: function(){
-            var currentCoord = coordPlane[Math.round(this.x/gridSize)][Math.round(this.y/gridSize)];
-            wallVX = 1/Math.sqrt(this.x,2) - 1/Math.sqrt((canvas.width - this.x),2);
-            wallVY = 1/Math.sqrt(this.y,2) - 1/Math.sqrt((canvas.height - this.y),2);
+            try {
+                var currentCoord = coordPlane[Math.round(this.x/gridSize)][Math.round(this.y/gridSize)];
+                // wallVX = 1/Math.pow(this.x,2) - 1/Math.pow((canvas.width - this.x),2)/10;
+                // wallVY = 1/Math.pow(this.y,2) - 1/Math.pow((canvas.height - this.y),2)/10;
 
-            this.x += currentCoord.vector.x/10;
-            this.y += currentCoord.vector.y/10;
+                // if(Math.random() < .1){
+                //     console.log(currentCoord.vector.x, currentCoord.vector.y, wallVX, wallVY);
+                // }
+            
+                this.x += currentCoord.vector.x/10;
+                this.y += currentCoord.vector.y/10;
+            } catch (e) {
+                for (var i = 0; i < sprites.length; i++) {
+                    if(sprites[i] === this){
+                        sprites.splice(i, 1);
+                    }
+                }
+            }
+            // this.x *= wallVX;
+            // this.y *= wallVY;
         },
 
         draw: function(){
-            context.fillStyle = "rgb(0,200,100)";
-
+            // context.fillStyle = "rgb(0,200,100)";
+            context.beginPath();
             context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
             context.fill();
         },
@@ -259,12 +277,12 @@ function main(){
         var direction = getDirectionTo(sprite, coord);
         var magnitude = getMagnitude(direction);
         //return a vector in the direction of d
-        var normalizedMagnitude = 1/Math.pow(magnitude,3);
-        direction.x *= normalizedMagnitude;
-        direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
+        // var normalizedMagnitude = 1/Math.pow(magnitude,3);
+        // direction.x *= normalizedMagnitude;
+        // direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
         // console.log(direction.x, direction.y);
-        // direction.x *= magnitude;
-        // direction.y *= magnitude;
+        direction.x *= magnitude;
+        direction.y *= magnitude;
         return direction;
     }
 
@@ -286,8 +304,12 @@ function main(){
                 coordList.splice(i,0);
             }
             else {
+
                 coordList[i].vector.x /= 1.00005;
                 coordList[i].vector.y /= 1.00005;
+
+
+////////////////INSTEAD: Make direction magnitude (speed) and unit vector (direction) a property of each object, use getVectorOfMotion() which gets speed and direction and multiplies that shit. Then degrade vectors could degrade magnitude incrementally and that shit would work.
             }
             // coordList[i].vector *= magnitude;
         }
@@ -298,23 +320,38 @@ function main(){
 
     var char1 = makeChar(50+Math.random()*200, 50+Math.random()*200,25);
 
-    var boid1 = makeBoid(50+Math.random()*200, 50+Math.random()*200,15);
+    for (var i = 0; i < 1; i++) {
+        var boid = makeBoid(50+Math.random()*200, 50+Math.random()*200,15);
+        sprites.push(boid);
+    }
 
-    // sprites.push(char1);
+    // var boid1 = makeBoid(50+Math.random()*200, 50+Math.random()*200,15);
+
+    sprites.push(char1);
     // sprites.push(boid1);
 
     function animate(){
-        char1.imprint();
-        boid1.imprint();
-        char1.move();
-        boid1.move();
+        for (var i = 0; i < sprites.length; i++) {
+                sprites[i].imprint();
+            }
+        for (var i = 0; i < sprites.length; i++) {
+            sprites[i].move();
+        }
+        // char1.imprint();
+        // boid1.imprint();
+        // char1.move();
+        // boid1.move();
         degradeVectors(affectedCoords);
 
     }
 
     function render(){
-        char1.draw();
-        boid1.draw();
+        // char1.draw();
+        // boid1.draw();
+
+        for (var i = 0; i < sprites.length; i++) {
+             sprites[i].draw();
+         }
         for (var i = 0; i < coordPlane.length; i++) {
             for (var j = 0; j < coordPlane[i].length; j++) {
                 coordPlane[i][j].logVect();
@@ -328,6 +365,5 @@ function main(){
         render();
         requestAnimationFrame(loop);
     }
-
     loop();
 }
