@@ -123,7 +123,7 @@ function main(){
         squares.push(square);
     }
     for (var i = 0; i < world.width/5; i++) {
-        var square = makeSquare(50+Math.random()*world.width-50, 50+Math.random()*world.height-50, 15, .2+Math.random()*.4);
+        var square = makeSquare(50+Math.random()*world.width-50, 50+Math.random()*world.height-50, 15, .2+Math.random()*0.4);
         squares.push(square);
     }
 
