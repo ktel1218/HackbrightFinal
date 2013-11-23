@@ -10,7 +10,7 @@ io.sockets.on('connection', function(socket){
     //convenience function to log server messages
     function log(){
         var array = [">>>>>>>> Message from server: "];
-        for(var i = 0; i < argument.length; i ++){
+        for(var i = 0; i < arguments.length; i ++){
             array.push(arguments[i]);
         }
         socket.emit('log', array);
@@ -25,7 +25,7 @@ io.sockets.on('connection', function(socket){
     socket.on('create or join', function(room){
         var numClients = io.sockets.clients(room).length;
 
-        log('Room ' + room + 'has' + numClients + 'client(s)');
+        log('Room ' + room + ' has ' + numClients + ' client(s)');
         log('Request to create or join room ' + room);
 
         if(numClients === 0){

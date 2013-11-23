@@ -1,9 +1,16 @@
 <html>
 <head>
-    <title>pairing</title>
+    <title>WebRTC client</title>
+    <base target="_blank"> 
+    <!-- wtf is this? ^ -->
 </head>
 <body>
-
+<div id='container'>
+    <div id='videos'>
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay muted></video>
+    </div>
+</div>
 <script src='/socket.io/socket.io.js'></script>
 <script src='js/main.js'></script>
 
