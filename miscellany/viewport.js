@@ -7,19 +7,14 @@ function main(){
     };
     var defaultMaxSpeed = 400;
     var squares = [];
-    // canvas.style.position = 'relative';
-    // canvas.style.left = '0px';
-    // canvas.style.top = '0px';
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     var world = {
-        "width": 2000,
-        "height": 2000,
+        "width": 6000,
+        "height": 6000,
     };
-    // var viewport = {
-    //     'width' : window.width,
-    //     'height' : window.height,
-    // };
+
 
     console.log(canvas);
 
@@ -50,16 +45,17 @@ function main(){
 
             // player is never directly at cursor!
             if(this.speed > 1){
-                this.x = this.x + Math.cos(ang) * (this.speed/25);
-                this.y = this.y + Math.sin(ang) * (this.speed/25);
+                this.x += Math.cos(ang) * (this.speed/25);
+                this.y += Math.sin(ang) * (this.speed/25);
             //if player is within 1 px of cursor, stop.
             }
 
             if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
 
-            // console.log(this.x, this.y);
-            // canvas.style.left = parseInt(canvas.style.top, 10) - this.x + (viewport.width/2) + 'px';
-            // canvas.style.top = parseInt(canvas.style.top, 10) - this.y + (viewport.height/2) + 'px';
+            // side collision
+            this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500000;
+            this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500000;
+
         },
 
         draw: function(){

@@ -12,6 +12,8 @@ function main(){
     canvas.width = 300;
     canvas.height = 300;
 
+    var buffer = 10;
+
     this.onmousemove = function(e){
         cursor.x = e.pageX;
         cursor.y = e.pageY;
@@ -72,6 +74,7 @@ function main(){
         ball.x = x;
         ball.y = y;
         ball.radius = Math.pow(radius,3);
+        ball.boundingBox = ball.radius + buffer;
         // ball.radius = radius;
 
         return ball;
