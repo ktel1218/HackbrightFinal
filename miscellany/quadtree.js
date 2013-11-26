@@ -48,7 +48,7 @@ function main(){
     };
 
     var Quadtree = {
-        "threshold": 2, // threshold of particles in quadrant
+        "threshold": 3, // threshold of particles in quadrant
 
         addParticles: function(particles){
             for (var i = 0; i < particles.length; i++) {
@@ -192,24 +192,32 @@ function main(){
         return rectangle;
     }
 
-    for (var i=0; i<25; i++){
+    for (var i=0; i<100; i++){
         var particle = makeParticle(Math.random()*canvas.width, Math.random()*canvas.height);
         global_particles.push(particle);
     }
     // particle = makeParticle(10,10);
     // particles.push(particle);
     quadtreeRoot = makeQuadtree(0,0, canvas.width, canvas.height);
-    quadTreeNodes.push(quadtreeRoot);
-    quadtreeRoot.addParticles(global_particles);
+    
 
     function prepCanvas(){
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+    function quadTreeSetup(){
+        quadtreeRoot.quadrants = [];
+        quadtreeRoot.particles = [];
+        quadTreeNodes = [];
+        quadTreeNodes.push(quadtreeRoot);
+        quadtreeRoot.addParticles(global_particles);
+    }
+
     function animate(){
-        // for (var i = 0; i < particles.length; i++) {
-        //     particles[i].move();
-        // }
+        for (var i = 0; i < global_particles.length; i++) {
+            global_particles[i].nearbyParticles = [];
+            global_particles[i].move();
+        }
         // particle.move();
     }
 
@@ -225,6 +233,7 @@ function main(){
 
     function loop(){
         prepCanvas();
+        quadTreeSetup();
         animate();
         render();
         requestAnimationFrame(loop);
