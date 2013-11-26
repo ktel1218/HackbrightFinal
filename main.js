@@ -148,8 +148,6 @@ function makeCircle(x,y,radius,layer){//layer is between 0 and 2
     var Metaball = {
 
         getDiameter : function(x, y){
-            // console.log(this.radius);
-            // console.log("x:",x,"y:",y);
             return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
         },
     };
@@ -161,9 +159,83 @@ function makeCircle(x,y,radius,layer){//layer is between 0 and 2
         ball.x = x;
         ball.y = y;
         ball.radius = Math.pow(radius,3);
-        // ball.boundingBox = ball.radius + buffer;
 
         return ball;
+    }
+
+
+    ////////////////////////   QuadTree   /////////////////////////////
+
+    var Quadtree = {
+        "threshold": 3, // threshold of particles in quadrant
+
+        addSprites: function(sprites){
+            for (var p = 0; p < sprites.length; p++) {
+                if (this.rectangle.overlapsWithParticle(sprites[p])){
+                    this.sprites.push(sprites[p]);
+                }
+            }
+            if (this.sprites.length > this.threshold &&
+                quadTreeNodes.length < 40){
+                this.subdivide();
+            }
+            else {
+                for (var i = 0; i < this.sprites.length; i++) {
+                    for (var j = 0; j < this.sprites.length; j++) {
+                        if (this.sprites[i] !== this.sprites[j]) {
+                            this.sprites[i].nearbySprites.push(this.sprites[j]);
+                        }
+                    }
+                }
+            }
+
+            // for each quadrant, find out which particles it contains
+            // if it's above the threshold, divide
+        },
+        // add metaBalls: function(metaBalls){},
+        //collisionDetection: function()
+        subdivide: function(){
+            var w2 = this.rectangle.width/2; // need to add the 2Drect constructor
+            var h2 = this.rectangle.height/2;
+            var x = this.rectangle.x;
+            var y = this.rectangle.y;
+
+            this.quadrants.push(makeQuadtree(x, y, w2, h2));
+            this.quadrants.push(makeQuadtree(x + w2, y, w2, h2));
+            this.quadrants.push(makeQuadtree(x + w2, y + h2, w2, h2));
+            this.quadrants.push(makeQuadtree(x, y + h2, w2, h2));
+
+            for (var i = 0; i < this.quadrants.length; i++) {
+                this.quadrants[i].addSprites(this.sprites);
+
+                quadTreeNodes.push(this.quadrants[i]);
+
+            }
+            this.sprites = [];
+
+            // makes 4 child Quadtrees with new rect bounds. each new quadrant passed list of particles, each adds its own particles, and parent quadrant's particle list is set to zero
+        },
+    };
+
+    function makeQuadtree(x, y, width, height){
+        Empty = function(){};
+        Empty.prototype = Quadtree;
+        var quadtree = new Empty();
+        quadtree.sprites = [];
+        quadtree.quadrants = [];
+        quadtree.rectangle = makeRectangle(x, y, width, height);
+        return quadtree;
+    }
+
+    function makeRectangle(x, y, width, height){//bounding box for quadtree
+        Empty = function(){};
+        Empty.prototype = Rectangle;
+        var rectangle = new Empty();
+        rectangle.x = x;
+        rectangle.y = y;
+        rectangle.width = width;
+        rectangle.height = height;
+        return rectangle;
     }
 
     //////////////////////////   MATH   ///////////////////////////////
