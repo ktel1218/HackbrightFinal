@@ -1,7 +1,6 @@
 function main(){
     //////////////////////////  GLOBALS   /////////////////////////////
 
-
     var canvas = document.getElementById("canv");
     var context = canvas.getContext('2d');
     var cursor = {
@@ -15,7 +14,9 @@ function main(){
         "height": 6000,
     };
     var defaultMaxSpeed = 1200;
+    var metaballMaxThreshold = 100;
     var particles = [];
+    var metaballs = [];
     var player1 = {
         "x" : 0,
         "y" : 0};
@@ -64,6 +65,11 @@ function main(){
             context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
             context.fill();
         },
+
+        getDiameter : function(x, y){
+            // console.log("radius: ", this.radius);
+            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+        },
     };
 
 
@@ -111,6 +117,7 @@ function main(){
         },
     };
 
+
 function makeSquare(x,y,size,layer){//layer is between 0 and 2
     Empty = function(){};
     Empty.prototype = Square;
@@ -134,6 +141,30 @@ function makeCircle(x,y,radius,layer){//layer is between 0 and 2
     circle.layer = layer;
     return circle;
 }
+
+
+    /////////////////////////  OTHER PLAYER   ////////////////////////////
+
+    var Metaball = {
+
+        getDiameter : function(x, y){
+            // console.log(this.radius);
+            // console.log("x:",x,"y:",y);
+            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+        },
+    };
+
+    function makeMetaball(x,y,radius){
+        Empty = function(){};
+        Empty.prototype = Metaball;
+        ball = new Empty();
+        ball.x = x;
+        ball.y = y;
+        ball.radius = Math.pow(radius,3);
+        // ball.boundingBox = ball.radius + buffer;
+
+        return ball;
+    }
 
     //////////////////////////   MATH   ///////////////////////////////
 
@@ -184,8 +215,35 @@ function makeCircle(x,y,radius,layer){//layer is between 0 and 2
 
     /////////////////////  INITIALIZE AND LOOP   ////////////////////////
 
+    function drawMetaballs(){
+        if (metaballs !== null) {
+            for (var x = 0; x < canvas.width; x++) {
+                for (var y = 0; y < canvas.height; y++) {
+                    var sum = 0; //reset the summation
+                    for (var i = 0; i < metaballs.length; i ++){
+                        // console.log("x: ", x, "y: ",y);
+                        // console.log(metaballs[i].getDiameter(x,y));
+                        sum += metaballs[i].getDiameter(x,y);
+                        //sum = NAN
+                        // console.log("sum: ", sum);
+                    }
+                    if (sum >= metaballMaxThreshold){
+                        context.fillStyle = "black";
+                        context.fillRect(x,y,1,1);
+                        // console.log("drawing!");
+                    }
+                }
+            }
+        }
+    }
+
 
     player1 = makePlayer(world.width/2,world.height/2,20);//starting x, y, and radius
+
+    metaball = makeMetaball(100,100,40);
+    metaballs.push(player1);
+    metaballs.push(metaball);
+
     for (var i = 0; i < world.width/16; i++) {
         var foreLayer = 1+Math.random()*5; // foreground depth index(1 - 5)
         var foresquare = makeCircle(
@@ -213,6 +271,7 @@ function makeCircle(x,y,radius,layer){//layer is between 0 and 2
 
     function render(){
         player1.draw();
+        // drawMetaballs();
         for (var i = 0; i < particles.length; i++) {
             particles[i].draw();
         }

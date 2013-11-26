@@ -9,8 +9,8 @@ function main(){
         "x": 0,
         "y": 0,
     };
-    canvas.width = 300;
-    canvas.height = 300;
+    canvas.width = 900;
+    canvas.height = 900;
 
     var buffer = 10;
 
@@ -45,9 +45,15 @@ function main(){
 
             if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
 
+            this.maxX = this.x + this.boundingBox/2;
+            this.minX = this.x - this.boundingBox/2;
+            this.maxY = this.y + this.boundingBox/2;
+            this.minY = this.y - this.boundingBox/2;
         },
+
         getDiameter : function(x, y){
-            // console.log("radius: ", this.radius);
+            // console.log(this.radius);
+            // console.log("x:",x,"y:",y);
             return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
         }
     };
@@ -74,7 +80,10 @@ function main(){
         ball.x = x;
         ball.y = y;
         ball.radius = Math.pow(radius,3);
-        ball.boundingBox = ball.radius + buffer;
+        ball.maxX = ball.x + radius + buffer;
+        ball.minX = ball.x - (radius + buffer);
+        ball.maxY = ball.y + radius + buffer;
+        ball.minY = ball.y - (radius + buffer);
         // ball.radius = radius;
 
         return ball;
@@ -87,16 +96,23 @@ function main(){
         charA.x = x;
         charA.y = y;
         charA.radius = Math.pow(radius,3);
+        charA.boundingBox = radius*2 + buffer;
+
         // charA.radius = radius;
 
         return charA;
     }
 
 
-    function draw_metaballs(){
+    function draw_metaballs(object){
+        var startX = object.minX;
+        var endX = object.maxX;
+        var startY = object.minY;
+        var endY = object.maxY;
+
         if (metaballs !== null) {
-            for (var x = 0; x < canvas.width; x++) {
-                for (var y = 0; y < canvas.height; y++) {
+            for (var x = startX; x < endX; x++) {
+                for (var y = startY; y < endY; y++) {
                     var sum = 0; //reset the summation
                     for (var i = 0; i < metaballs.length; i ++){
                         // console.log("x: ", x, "y: ",y);
@@ -136,7 +152,11 @@ function main(){
     }
 
     function render(){
-        draw_metaballs();
+        if ((char1.minX < metaball1.maxX && char1.maxX > metaball1.minX) &&
+                    (char1.minY < metaball1.maxY && char1.maxY > metaball1.minY)){
+            draw_metaballs(char1);
+            draw_metaballs(metaball1);
+        }
     }
 
     function loop(){
