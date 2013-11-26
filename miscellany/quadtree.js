@@ -8,7 +8,7 @@ function main(){
     var quadTreeNodes = [];
 
     var Particle = {
-        "radius": 10,
+        "radius": 15,
         "vX": 5,
         "vY": 5,
         "nearbyParticles": [],
@@ -26,16 +26,47 @@ function main(){
                 for (var i = 0; i < this.nearbyParticles.length; i++) {
                     var particle = this.nearbyParticles[i];
                     if (this.collisionDetect(particle)){
+                        console.log("collision!");
                         this.vX = -this.vX;
                         this.vY = -this.vY;
                     }
                 }
             }
+            if (this.x >= canvas.width || this.x <= 0){
+                this.vX = -this.vX;
+            }
+
+            if (this.y >= canvas.height || this.y <= 0){
+                    this.vY = -this.vY;
+            }
+
             
-            if (this.x > canvas.width)this.x = 0;
-            if (this.x < 0)this.x = canvas.width;
-            if (this.y > canvas.height)this.y = 0;
-            if (this.y < 0)this.y = canvas.height;
+            // if (this.x >= canvas.width){
+            //     this.x -= canvas.width;
+            //     if (this.vX > 0){
+            //         this.vX = -this.vX;
+            //     }
+            // }
+            // if (this.x <= 0){
+            //     this.x += canvas.width;
+            //     if (this.vX < 0){
+            //         this.vX = -this.vX;
+            //     }
+            // }
+            // if (this.y >= canvas.height){
+            //     this.y -= canvas.height;
+            //     if (this.vY > 0){
+            //         this.vY = -this.vY;
+            //     }
+            // }
+            // if (this.y <= 0){
+            //     this.y += canvas.height;
+            //     if (this.vY < 0){
+            //         this.vY = -this.vY;
+            //     }
+            // }
+
+
         },
         collisionDetect: function(object){
             var a = this.radius + object.radius;
@@ -192,7 +223,7 @@ function main(){
         return rectangle;
     }
 
-    for (var i=0; i<100; i++){
+    for (var i=0; i<50; i++){
         var particle = makeParticle(Math.random()*canvas.width, Math.random()*canvas.height);
         global_particles.push(particle);
     }
@@ -215,8 +246,8 @@ function main(){
 
     function animate(){
         for (var i = 0; i < global_particles.length; i++) {
-            global_particles[i].nearbyParticles = [];
             global_particles[i].move();
+            global_particles[i].nearbyParticles = [];
         }
         // particle.move();
     }
