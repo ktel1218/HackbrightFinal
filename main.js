@@ -13,7 +13,7 @@ function main(){
         "width": 6000,
         "height": 6000,
     };
-    var defaultMaxSpeed = 1200;
+    var defaultMaxSpeed = 300;
     var metaballMaxThreshold = 100;
     var particles = [];
     var metaballs = [];
@@ -44,7 +44,7 @@ function main(){
     function Player(x,y,radius){
 
         this.maxSpeed = defaultMaxSpeed;
-
+        this.nearbySprites = [];
         this.x = x;
         this.y = y;
         this.radius = radius;
@@ -66,14 +66,20 @@ function main(){
         this.velocity = getDirectionTo(this.displayX, this.displayY, cursor.x,cursor.y);
         this.speed = getMagnitude(this.velocity);
 
+        //do not exceed max speed
+        if (this.speed > this.maxSpeed){
+        this.speed = this.maxSpeed;
+        this.velocity = normalize(this.velocity);
+        this.velocity.x *= this.speed;
+        this.velocity.y *= this.speed;
+        }
+
         // player is never directly at cursor!
         if(this.speed > 1){
             this.x += this.velocity.x/18;
             this.y += this.velocity.y/18;
         //if player is within 1 px of cursor, stop.
         }
-
-        if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
 
         // wall collision
         this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500000;
@@ -166,8 +172,6 @@ function main(){
 
     function Boid(x,y){
         this.radius = 15;
-        this.vX = 5;
-        this.vY = 5;
         this.nearbySprites = [];
         this.x = x;
         this.y = y;
@@ -184,35 +188,39 @@ function main(){
 
     Boid.prototype.move = function(){
 
-        var force = {
+        this.velocity = {
             "x": 0,
             "y": 0
         };
 
         for (var i = 0; i < this.nearbySprites.length; i++) {
             sprite = this.nearbySprites[i];
-            vector = getDirectionTo(sprite.x, sprite.y, this.x, this.y);
-            var magnitude = getMagnitude(vector);
-            vector.x *= 1/(magnitude * magnitude * magnitude);
-            vector.y *= 1/(magnitude * magnitude * magnitude);
-            if (2000 > magnitude && magnitude  > 80){//can split
-                vector.x = -vector.x;
-                vector.y = -vector.y;
+            var partialV = getDirectionTo(sprite.x, sprite.y, this.x, this.y);
+            this.speed = getMagnitude(partialV);
+            partialV.x *= 1/(this.speed * this.speed * this.speed);
+            partialV.y *= 1/(this.speed * this.speed * this.speed);
+            if (sprite instanceof Player){//evade
+                partialV.x *= 10;
+                partialV.y *= 10;
             }
-            force.x += vector.x;
-            force.y += vector.y;
+            else if (2000 > this.speed && this.speed > 90){//group
+                partialV.x = -partialV.x;
+                partialV.y = -partialV.y;
+            }
+            this.velocity.x += partialV.x;
+            this.velocity.y += partialV.y;
         }
 
-        if (getMagnitude(force) > 0.00008){//reduce sensitivity
+        if (getMagnitude(this.velocity) > 0.000008){//reduce sensitivity
             // d = normalize(d);
-            this.x += force.x * 10000;
-            this.y += force.y * 10000;
+            this.x += this.velocity.x * 10000;
+            this.y += this.velocity.y * 10000;
         }
 
         //// wall collision
 
-        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500000;
-        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500000;
+        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500;
+        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500;
 
     };
 
@@ -364,49 +372,6 @@ function main(){
         return normalizedVector;
     }
 
-
-    // function computeOtherBoidForce(boid, sprite){
-    //     var velocity = {x: 0, y:0};
-
-    //     var force = computePointForce(boid, boidList[i]);
-
-
-    //     var boidx = boid.x;
-    //     var boidy = boid.y;
-    //     var otherx = obstacle.x;
-    //     var othery = obstacle.y;
-    //     var direction = getDirectionTo(obstacle, boid);
-    //     var magnitude = getMagnitude(direction);
-    //     //return a vector in the direction of d
-    //     direction.x *= 1/(magnitude * magnitude * magnitude);
-    //     direction.y *= 1/(magnitude * magnitude * magnitude); //weighted by magnitude squared and another to get unit vector?
-    //     // return direction;
-
-
-    //     // var magnitude = getMagnitude(force);
-    //     if (magnitude > 0.00002 && magnitude < 0.00008){//can split
-    //         force.x = -force.x;
-    //         force.y = -force.y;
-    //     }
-    //     velocity.x -= force.x;
-    //     velocity.y -= force.y;
-        
-    //     return velocity;
-    // }
-
-    // function computePointForce(boid, obstacle){
-    //     var boidx = boid.x;
-    //     var boidy = boid.y;
-    //     var otherx = obstacle.x;
-    //     var othery = obstacle.y;
-    //     var direction = getDirectionTo(obstacle, boid);
-    //     var magnitude = getMagnitude(direction);
-    //     //return a vector in the direction of d
-    //     direction.x *= 1/(magnitude * magnitude * magnitude);
-    //     direction.y *= 1/(magnitude * magnitude * magnitude); //weighted by magnitude squared and another to get unit vector?
-    //     return direction;
-    // }
-
     /////////////////////  INITIALIZE AND LOOP   ////////////////////////
 
     // function drawMetaballs(){
@@ -433,6 +398,9 @@ function main(){
 
 
     player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
+
+    global_sprites.push(player1);
+
     quadtreeRoot = new Quadtree(0,0, world.width, world.height);
     for (var i=0; i<1000; i++){
         var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
@@ -440,7 +408,7 @@ function main(){
     }
 
     // metaball = makeMetaball(100,100,40);
-    metaballs.push(player1);
+    // metaballs.push(player1);
     // metaballs.push(metaball);
 
 //TODO adjust on window resize
@@ -477,7 +445,7 @@ function main(){
     }
 
     function animate(){
-        player1.move();
+        // player1.move();
         for (var i = 0; i < global_sprites.length; i++) {
             global_sprites[i].move();
             global_sprites[i].nearbySprites = [];
@@ -485,7 +453,7 @@ function main(){
     }
 
     function render(){
-        player1.draw();
+        // player1.draw();
         // drawMetaballs();
         for (var i = 0; i < global_sprites.length; i++) {
             global_sprites[i].draw();
