@@ -159,7 +159,7 @@ function main(){
     };
 
 
-    //////////////////////////   Boid   ///////////////////////////////
+    //////////////////////////   BOID   ///////////////////////////////
 
 
 
@@ -175,34 +175,48 @@ function main(){
     }
 
     Boid.prototype.draw = function(){
-        var displayX = this.x - (player1.x);
-        var displayY = this.y - (player1.y);
+        var displayX = this.x - (player1.x-player1.displayX);
+        var displayY = this.y - (player1.y-player1.displayY);
         context.beginPath();
         context.arc(displayX, displayY, this.radius, 0,Math.PI*2,true);
         context.fill();
     };
+
     Boid.prototype.move = function(){
-        this.x += this.vX;
-        this.y += this.vY;
-        if (this.nearbySprites !== []){
-            for (var i = 0; i < this.nearbySprites.length; i++) {
-                var sprite = this.nearbySprites[i];
-                if (this.collisionDetect(sprite)){
-                    dx = this.x - sprite.x;
-                    dy = this.y - sprite.y;
-                    this.vX = dx;
-                    this.vY = dy;
-                }
+
+        var force = {
+            "x": 0,
+            "y": 0
+        };
+
+        for (var i = 0; i < this.nearbySprites.length; i++) {
+            sprite = this.nearbySprites[i];
+            vector = getDirectionTo(sprite.x, sprite.y, this.x, this.y);
+            var magnitude = getMagnitude(vector);
+            vector.x *= 1/(magnitude * magnitude * magnitude);
+            vector.y *= 1/(magnitude * magnitude * magnitude);
+            if (2000 > magnitude && magnitude  > 80){//can split
+                vector.x = -vector.x;
+                vector.y = -vector.y;
             }
-        }
-        if (this.x >= world.width || this.x <= 0){
-            this.vX = -this.vX;
+            force.x += vector.x;
+            force.y += vector.y;
         }
 
-        if (this.y >= world.height || this.y <= 0){
-            this.vY = -this.vY;
+        if (getMagnitude(force) > 0.00008){//reduce sensitivity
+            // d = normalize(d);
+            this.x += force.x * 10000;
+            this.y += force.y * 10000;
         }
+
+        //// wall collision
+
+        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500000;
+        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500000;
+
     };
+
+
     Boid.prototype.collisionDetect = function(object){
         var a = this.radius + object.radius;
         var dx = object.x - this.x;
@@ -219,7 +233,7 @@ function main(){
 
 
     function Quadtree(x, y, width, height){
-        this.threshold = 3;
+        this.threshold = 10;
         this.sprites = [];
         this.quadrants = [];
         this.rectangle = new Rectangle(x, y, width, height);
@@ -236,7 +250,7 @@ function main(){
             }
         }
         if (this.sprites.length > this.threshold &&
-            quadTreeNodes.length < 40){
+            quadTreeNodes.length < 1000){
             this.subdivide();
         }
         else {
@@ -289,8 +303,11 @@ function main(){
     };
 
     Rectangle.prototype.draw = function(){
-            context.fillStyle = "rgba(0,200,100,0.1)";
-            context.fillRect(this.x,this.y,this.width,this.height);
+        displayX = this.x - (player1.x-player1.displayX);
+        displayY = this.y - (player1.y-player1.displayY);
+        context.strokeStyle = "white";
+        // context.fillStyle = "rgba(0,200,100,0.1)";
+        context.strokeRect(displayX,displayY,this.width,this.height);
     };
 
 
@@ -304,7 +321,9 @@ function main(){
     function getMagnitude(vector){
             var x = vector.x;
             var y = vector.y;
+            // console.log(x,y);
             var n = Math.sqrt(x*x + y*y);
+            // console.log(n);
             // console.log(Math.abs(n));
             return Math.abs(n);
     }
@@ -345,6 +364,49 @@ function main(){
         return normalizedVector;
     }
 
+
+    // function computeOtherBoidForce(boid, sprite){
+    //     var velocity = {x: 0, y:0};
+
+    //     var force = computePointForce(boid, boidList[i]);
+
+
+    //     var boidx = boid.x;
+    //     var boidy = boid.y;
+    //     var otherx = obstacle.x;
+    //     var othery = obstacle.y;
+    //     var direction = getDirectionTo(obstacle, boid);
+    //     var magnitude = getMagnitude(direction);
+    //     //return a vector in the direction of d
+    //     direction.x *= 1/(magnitude * magnitude * magnitude);
+    //     direction.y *= 1/(magnitude * magnitude * magnitude); //weighted by magnitude squared and another to get unit vector?
+    //     // return direction;
+
+
+    //     // var magnitude = getMagnitude(force);
+    //     if (magnitude > 0.00002 && magnitude < 0.00008){//can split
+    //         force.x = -force.x;
+    //         force.y = -force.y;
+    //     }
+    //     velocity.x -= force.x;
+    //     velocity.y -= force.y;
+        
+    //     return velocity;
+    // }
+
+    // function computePointForce(boid, obstacle){
+    //     var boidx = boid.x;
+    //     var boidy = boid.y;
+    //     var otherx = obstacle.x;
+    //     var othery = obstacle.y;
+    //     var direction = getDirectionTo(obstacle, boid);
+    //     var magnitude = getMagnitude(direction);
+    //     //return a vector in the direction of d
+    //     direction.x *= 1/(magnitude * magnitude * magnitude);
+    //     direction.y *= 1/(magnitude * magnitude * magnitude); //weighted by magnitude squared and another to get unit vector?
+    //     return direction;
+    // }
+
     /////////////////////  INITIALIZE AND LOOP   ////////////////////////
 
     // function drawMetaballs(){
@@ -372,7 +434,7 @@ function main(){
 
     player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
     quadtreeRoot = new Quadtree(0,0, world.width, world.height);
-    for (var i=0; i<500; i++){
+    for (var i=0; i<1000; i++){
         var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
         global_sprites.push(boid);
     }
@@ -431,6 +493,9 @@ function main(){
         for (var i = 0; i < particles.length; i++) {
             particles[i].draw();
         }
+        for (var i = 0; i < quadTreeNodes.length; i++) {
+            quadTreeNodes[i].rectangle.draw();
+        };
     }
 
     function loop(){
