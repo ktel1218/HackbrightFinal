@@ -20,6 +20,11 @@ function main(){
     var global_sprites = [];
     var quadTreeNodes = [];
 
+    var player1 = {
+        "x":0,
+        "y":0,
+    };
+
 
     //////////////////  MOUSE/WINDOW LISTENERS   /////////////////////
 
@@ -50,6 +55,7 @@ function main(){
         this.radius = radius;
         this.displayX = canvas.width/2;
         this.displayY = canvas.height/2;
+        this.boundingBox = this.getBoundingBox();
 
         return this;
     }
@@ -60,6 +66,8 @@ function main(){
         //this.displayY = shared center y
         this.displayX = canvas.width/2;
         this.displayY = canvas.height/2;
+        this.boundingBox.displayX = this.displayX-this.radius;
+        this.boundingBox.displayY = this.displayY-this.radius;
     };
 
     Player.prototype.move = function(){
@@ -86,16 +94,17 @@ function main(){
         this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500000;
     };
 
-    Player.prototype.draw = function(){
-        context.beginPath();
-        context.fillStyle = "rgba(200,0,200,.85)";
-        // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
-        context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
-        context.fill();
-    };
 
     Player.prototype.getDiameter = function(){
         return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    };
+
+    Player.prototype.getBoundingBox = function(){
+        var boundingBox = new BoundingBox(this.x-this.radius, this.y-this.radius,
+            this.radius*2, this.radius*2);
+        boundingBox.displayX = this.displayX-this.radius;
+        boundingBox.displayY = this.displayY-this.radius;
+        return boundingBox;
     };
 
     // Player.prototype.diameter.__defineGetter__("value", function(){
@@ -113,35 +122,35 @@ function main(){
     function Square(x,y,size,layer){
             this.x = x;
             this.y = y;
+            this.displayX = (x - player1.x*layer);
+            this.displayY = (y - player1.y*layer);
             this.width = size;
             this.height = size;
             this.layer = layer;
             return this;
     }
     Square.prototype.draw = function(){
-        var displayX = this.x - (player1.x*this.layer);
-        var displayY = this.y - (player1.y*this.layer);
         var displayWidth = this.width * this.layer;
         var displayHeight = this.height * this.layer;
         context.fillStyle = "rgba(200,0,100," + 1/(this.layer*2) + ")";
-        context.fillRect(displayX, displayY, displayWidth, displayHeight);
+        context.fillRect(this.displayX, this.displayY, displayWidth, displayHeight);
     };
 
 
     function Circle(x, y, radius, layer){
         this.x = x;
         this.y = y;
+        this.displayX = (x - player1.x*layer);
+        this.displayY = (y - player1.y*layer);
         this.radius = radius;
         this.layer = layer;
         return this;
     }
     Circle.prototype.draw = function(){
-        var displayX = this.x - (player1.x*this.layer);
-        var displayY = this.y - (player1.y*this.layer);
         var displayRadius = this.radius * this.layer;
         context.fillStyle = "rgba(0,200,100," + 1/(this.layer*2) + ")";
         context.beginPath();
-        context.arc(displayX,displayY,displayRadius,0,Math.PI*2,true);
+        context.arc(this.displayX,this.displayY,displayRadius,0,Math.PI*2,true);
         context.fill();
     };
 
@@ -175,14 +184,14 @@ function main(){
         this.nearbySprites = [];
         this.x = x;
         this.y = y;
+        this.displayX = x - (player1.x-player1.displayX);
+        this.displayY = y - (player1.y-player1.displayY);
         return this;
     }
 
     Boid.prototype.draw = function(){
-        var displayX = this.x - (player1.x-player1.displayX);
-        var displayY = this.y - (player1.y-player1.displayY);
         context.beginPath();
-        context.arc(displayX, displayY, this.radius, 0,Math.PI*2,true);
+        context.arc(this.displayX, this.displayY, this.radius, 0,Math.PI*2,true);
         context.fill();
     };
 
@@ -235,7 +244,7 @@ function main(){
 
 
 
-    ////////////////////////   QuadTree   /////////////////////////////
+    ////////////////////////   QUADTREE   /////////////////////////////
 
 
 
@@ -244,7 +253,7 @@ function main(){
         this.threshold = 10;
         this.sprites = [];
         this.quadrants = [];
-        this.rectangle = new Rectangle(x, y, width, height);
+        this.boundingBox = new BoundingBox(x, y, width, height);
         return this;
     }
 
@@ -253,7 +262,7 @@ function main(){
         // for each quadrant, find out which particles it contains
         // if it's above the threshold, divide
         for (var s = 0; s < sprites.length; s++) {
-            if (this.rectangle.overlapsWithSprite(sprites[s])){
+            if (this.boundingBox.overlapsWithSprite(sprites[s])){
                 this.sprites.push(sprites[s]);
             }
         }
@@ -274,10 +283,10 @@ function main(){
     Quadtree.prototype.subdivide = function(){
         // makes 4 child Quadtrees with new rect bounds. each new quadrant passed list of particles, each adds its own particles, and parent quadrant's particle list is set to zero
 
-        var w2 = this.rectangle.width/2;
-        var h2 = this.rectangle.height/2;
-        var x = this.rectangle.x;
-        var y = this.rectangle.y;
+        var w2 = this.boundingBox.width/2;
+        var h2 = this.boundingBox.height/2;
+        var x = this.boundingBox.minX;
+        var y = this.boundingBox.minY;
 
         this.quadrants.push(new Quadtree(x, y, w2, h2));
         this.quadrants.push(new Quadtree(x + w2, y, w2, h2));
@@ -293,29 +302,34 @@ function main(){
         this.sprites = [];
     };
 
-    function Rectangle(x, y, width, height){
-        this.x = x;
-        this.y = y;
+    //////////////////////   BOUNDING BOX   ///////////////////////////
+
+
+    function BoundingBox(x, y, width, height){
+        this.minX = x;
+        this.minY = y;
         this.width = width;
         this.height = height;
+        this.maxX = x + width;
+        this.maxY = y + height;
+        this.displayX = x - (player1.x-player1.displayX);
+        this.displayY = y - (player1.y-player1.displayY);
         return this;
     }
 
-    Rectangle.prototype.overlapsWithSprite = function(sprite){
+    BoundingBox.prototype.overlapsWithSprite = function(sprite){
             sMinX = sprite.x - sprite.radius;
             sMaxX = sprite.x + sprite.radius;
             sMinY = sprite.y - sprite.radius;
             sMaxY = sprite.y + sprite.radius;
-            return ((sMinX < this.x + this.width && sMaxX > this.x) &&
-                        (sMinY < this.y + this.height && sMaxY > this.y));
+            return ((sMinX < this.maxX && sMaxX > this.minX) &&
+                        (sMinY < this.maxY && sMaxY > this.minY));
     };
 
-    Rectangle.prototype.draw = function(){
-        displayX = this.x - (player1.x-player1.displayX);
-        displayY = this.y - (player1.y-player1.displayY);
+    BoundingBox.prototype.draw = function(){
         context.strokeStyle = "white";
         // context.fillStyle = "rgba(0,200,100,0.1)";
-        context.strokeRect(displayX,displayY,this.width,this.height);
+        context.strokeRect(this.displayX,this.displayY,this.width,this.height);
     };
 
 
@@ -374,41 +388,42 @@ function main(){
 
     /////////////////////  INITIALIZE AND LOOP   ////////////////////////
 
-    // function drawMetaballs(){
-    //     if (metaballs !== null) {
-    //         for (var x = 0; x < canvas.width; x++) {
-    //             for (var y = 0; y < canvas.height; y++) {
-    //                 var sum = 0; //reset the summation
-    //                 for (var i = 0; i < metaballs.length; i ++){
-    //                     // console.log("x: ", x, "y: ",y);
-    //                     // console.log(metaballs[i].getDiameter(x,y));
-    //                     sum += metaballs[i].getDiameter(x,y);
-    //                     //sum = NAN
-    //                     // console.log("sum: ", sum);
-    //                 }
-    //                 if (sum >= metaballMaxThreshold){
-    //                     context.fillStyle = "black";
-    //                     context.fillRect(x,y,1,1);
-    //                     // console.log("drawing!");
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    function drawMetaballs(){
+        if (metaballs !== null) {
+
+            for (var x = 0; x < canvas.width; x++) {
+                for (var y = 0; y < canvas.height; y++) {
+                    var sum = 0; //reset the summation
+                    for (var i = 0; i < metaballs.length; i ++){
+                        // console.log("x: ", x, "y: ",y);
+                        // console.log(metaballs[i].getDiameter(x,y));
+                        sum += metaballs[i].getDiameter(x,y);
+                        //sum = NAN
+                        // console.log("sum: ", sum);
+                    }
+                    if (sum >= metaballMaxThreshold){
+                        context.fillStyle = "black";
+                        context.fillRect(x,y,1,1);
+                        // console.log("drawing!");
+                    }
+                }
+            }
+        }
+    }
 
 
     player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
 
-    global_sprites.push(player1);
+    // global_sprites.push(player1);
 
     quadtreeRoot = new Quadtree(0,0, world.width, world.height);
-    for (var i=0; i<1000; i++){
+    for (var i=0; i<2000; i++){
         var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
         global_sprites.push(boid);
     }
 
     // metaball = makeMetaball(100,100,40);
-    // metaballs.push(player1);
+    metaballs.push(player1);
     // metaballs.push(metaball);
 
 //TODO adjust on window resize
@@ -445,7 +460,7 @@ function main(){
     }
 
     function animate(){
-        // player1.move();
+        player1.move();
         for (var i = 0; i < global_sprites.length; i++) {
             global_sprites[i].move();
             global_sprites[i].nearbySprites = [];
@@ -453,7 +468,7 @@ function main(){
     }
 
     function render(){
-        // player1.draw();
+        player1.boundingBox.draw();
         // drawMetaballs();
         for (var i = 0; i < global_sprites.length; i++) {
             global_sprites[i].draw();
@@ -462,8 +477,8 @@ function main(){
             particles[i].draw();
         }
         for (var i = 0; i < quadTreeNodes.length; i++) {
-            quadTreeNodes[i].rectangle.draw();
-        };
+            quadTreeNodes[i].boundingBox.draw();
+        }
     }
 
     function loop(){

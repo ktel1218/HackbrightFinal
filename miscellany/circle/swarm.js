@@ -7,7 +7,7 @@ function main(){
 
     var wallForceFactor = 3;
     var playerForceFactor = 8;
-    var defaultMaxSpeed = 400;
+    var defaultMaxSpeed = 300;
 
     var boids = [];
     var message = [];
@@ -18,7 +18,11 @@ function main(){
     };
 
     this.onclick = function(e){
-        console.log(message);
+        for (var i = 0; i < 20; i++) {
+            var boid = makeBoid(Math.random()*canvas.width, Math.random()*canvas.height);
+            boids.push(boid);
+            console.log(boid);
+        }
     };
 
     var Char = {
@@ -55,16 +59,14 @@ function main(){
 
     var Boid = {
         "r": 10,
-        "x": 100,
-        "y": 100,
 
         move: function(){
 
             var d = computeForceVector(this, boids, char1);
-            if (getMagnitude(d) > 0.00008){//reduce sensitivity
+            if (getMagnitude(d) > 0.00006){//reduce sensitivity
                 // d = normalize(d);
-                this.x += d.x * 10000;
-                this.y += d.y * 10000;
+                this.x += d.x * 8000;
+                this.y += d.y * 8000;
             }
         },
 
@@ -224,10 +226,20 @@ function main(){
         return sumVectors([vWall, vBoids, vChar]);
     }
 
+    function boidCount(){
+        context.fillStyle="rgba(240,240,240,0.8";
+        context.beginPath();
+        context.arc(45,45,40,0,Math.PI*2,true);
+        context.fill();
+        context.fillStyle="rgb(50,50,50)";
+        context.font="30px Helvetica";
+        context.fillText(boids.length,19,55);
+    }
+
     //make char
     char1 = makeChar(10,10);
     //make boids
-    for (var i=0; i<25; i++){
+    for (var i=0; i<100; i++){
         var boid = makeBoid(50+Math.random()*500, 50+Math.random()*300);
         boids.push(boid);
     }
@@ -240,10 +252,12 @@ function main(){
     }
 
     function render(){
+
         for (var i=0; i<boids.length; i++){
             boids[i].draw();
         }
         char1.draw();
+        boidCount();
     }
 
     function loop(){
