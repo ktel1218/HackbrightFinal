@@ -10,10 +10,10 @@ function main(){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     var world = {
-        "width": 6000,
-        "height": 6000,
+        "width": 3000,
+        "height": 3000,
     };
-    var defaultMaxSpeed = 600;
+    var defaultMaxSpeed = 300;
     var metaballMaxThreshold = 100;
     var particles = [];
     var metaballs = [];
@@ -28,6 +28,12 @@ function main(){
         cursor.x = e.pageX;
         cursor.y = e.pageY;
     };
+
+    document.body.addEventListener('touchmove', function(e){
+        e.preventDefault();
+        cursor.x = e.targetTouches[0].pageX; // alert pageX coordinate of touch point
+        cursor.y = e.targetTouches[0].pageY;
+    }, false);
 
     window.onresize = function(event) {
         canvas.width = window.innerWidth;
@@ -45,10 +51,10 @@ function main(){
 
         this.maxSpeed = defaultMaxSpeed;
         this.nearbySprites = [];
-        this.speed = 0;
         this.x = x;
         this.y = y;
         this.radius = radius;
+        this.speed = 0;
         this.influenceRadius = radius * 4 * (this.speed+20);
         this.displayX = canvas.width/2;
         this.displayY = canvas.height/2;
@@ -68,17 +74,6 @@ function main(){
         this.velocity = getDirectionTo(this.displayX, this.displayY, cursor.x,cursor.y);
         this.speed = getMagnitude(this.velocity);
 
-        //eating
-        for (var i = 0; i < this.nearbySprites.length; i++) {
-            object = this.collisionDetect(this.nearbySprites[i]);
-            if(object){
-                if (object instanceof Boid){
-                    object.die();
-                    console.log("YUM!");
-                }
-            }
-        }
-
         //do not exceed max speed
         if (this.speed > this.maxSpeed){
         this.speed = this.maxSpeed;
@@ -86,7 +81,6 @@ function main(){
         this.velocity.x *= this.speed;
         this.velocity.y *= this.speed;
         }
-
 
         // player is never directly at cursor!
         if(this.speed > 1){
@@ -96,13 +90,13 @@ function main(){
         }
 
         // wall collision
-        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500000;
-        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500000;
+        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*8000;
+        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*8000;
     };
 
     Player.prototype.draw = function(){
         context.beginPath();
-        context.fillStyle = "rgba(200,200,200,0.85)";
+        context.fillStyle = "rgba(220,220,220,.85)";
         // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
         context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
         context.fill();
@@ -112,22 +106,6 @@ function main(){
         return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
     };
 
-    Player.prototype.collisionDetect = function(object){
-        var a;
-        if (object instanceof Player){
-            a = this.influenceRadius + object.influenceRadius;
-        }
-
-        if (object instanceof Boid){
-            a = this.radius + object.radius;
-        }
-        var dx = object.x - this.x;
-        var dy = object.y - this.y;
-        var d = dx*dx+dy*dy;
-        if (d <= a*a){
-            return object;
-        }
-    };
     // Player.prototype.diameter.__defineGetter__("value", function(){
     //     return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
     // });
@@ -200,14 +178,12 @@ function main(){
 
 
 
-    function Boid(x,y, index){
+    function Boid(x,y){
         this.radius = 15;
         this.influenceRadius = this.radius *1.5;
         this.nearbySprites = [];
         this.x = x;
         this.y = y;
-        this.index = index;
-        this.maxSpeed = defaultMaxSpeed/200;
         return this;
     }
 
@@ -230,44 +206,31 @@ function main(){
         for (var i = 0; i < this.nearbySprites.length; i++) {
             sprite = this.nearbySprites[i];
             var partialV = getDirectionTo(sprite.x, sprite.y, this.x, this.y);
-            var speed = getMagnitude(partialV);
-            partialV.x *= 1/(speed * speed * speed);
-            partialV.y *= 1/(speed * speed * speed);
+            this.speed = getMagnitude(partialV);
+            partialV.x *= 1/(this.speed * this.speed * this.speed);
+            partialV.y *= 1/(this.speed * this.speed * this.speed);
             if (sprite instanceof Player){//evade
                 partialV.x *= 10;
                 partialV.y *= 10;
             }
-            else if (2000 > speed && speed > 90){//group
+            else if (2000 > this.speed && this.speed > 90){//group
                 partialV.x = -partialV.x;
                 partialV.y = -partialV.y;
             }
             this.velocity.x += partialV.x;
             this.velocity.y += partialV.y;
-            this.velocity.x *= 10000;
-            this.velocity.y *= 10000;
         }
 
-        this.speed = getMagnitude(this.velocity);
-        if (this.speed > this.maxSpeed){
-            this.speed = this.maxSpeed;
-            this.velocity = normalize(this.velocity);
-            this.velocity.x *= this.speed;
-            this.velocity.y *= this.speed;
-        }
-
-
-        if (getMagnitude(this.velocity) > 800){//reduce sensitivity
+        if (getMagnitude(this.velocity) > 0.000008){//reduce sensitivity
             // d = normalize(d);
-            this.x += this.velocity.x;
-            this.y += this.velocity.y;
+            this.x += this.velocity.x * 10000;
+            this.y += this.velocity.y * 10000;
         }
-
-
 
         //// wall collision
 
-        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*500;
-        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*500;
+        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*5000;
+        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*5000;
 
     };
 
@@ -278,12 +241,6 @@ function main(){
         var dy = object.y - this.y;
         var d = dx*dx+dy*dy;
         return (d <= a*a);
-    };
-
-    Boid.prototype.die = function(){
-        global_sprites.splice(this.index,1);
-        console.log("AAAAAAAGH!");
-
     };
 
 
@@ -449,16 +406,14 @@ function main(){
     //     }
     // }
 
-    //player1
+
     player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
+
     global_sprites.push(player1);
 
-    //quadtree
     quadtreeRoot = new Quadtree(0,0, world.width, world.height);
-
-    //boids
-    for (var i=0; i<1000; i++){
-        var boid = new Boid(Math.random()*world.width, Math.random()*world.height, i);
+    for (var i=0; i<500; i++){
+        var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
         global_sprites.push(boid);
     }
 
