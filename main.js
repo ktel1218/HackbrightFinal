@@ -56,6 +56,7 @@ function main(){
         this.displayX = canvas.width/2;
         this.displayY = canvas.height/2;
         this.boundingBox = this.getBoundingBox();
+        this.currentCollisions = [];
 
         return this;
     }
@@ -73,6 +74,14 @@ function main(){
     Player.prototype.move = function(){
         this.velocity = getDirectionTo(this.displayX, this.displayY, cursor.x,cursor.y);
         this.speed = getMagnitude(this.velocity);
+
+        //clear collisions, detect collisions
+        this.currentCollisions = [];
+        for (var i = 0; i < this.nearbySprites.length; i++) {
+            if(this.collisionDetect(this.nearbySprites[i])){
+                this.currentCollisions.push(this.nearbySprites[i]);
+            }
+        }
 
         //do not exceed max speed
         if (this.speed > this.maxSpeed){
@@ -105,6 +114,25 @@ function main(){
         boundingBox.displayX = this.displayX-this.radius;
         boundingBox.displayY = this.displayY-this.radius;
         return boundingBox;
+    };
+
+    Player.prototype.collisionDetect = function(object){
+        var a;
+        if (object instanceof Metaball){
+            a = this.influenceRadius + object.influenceRadius;
+        }
+
+        if (object instanceof Boid){
+            a = this.radius + object.radius;
+        }
+        var dx = object.x - this.x;
+        var dy = object.y - this.y;
+        var d = dx*dx+dy*dy;
+        if (d <= a*a) return object;
+    };
+
+    Player.prototype.draw = function(){
+        //jk
     };
 
     // Player.prototype.diameter.__defineGetter__("value", function(){
@@ -161,7 +189,7 @@ function main(){
 
 
     function Metaball(x,y,radius){
-
+        this.nearbySprites = [];
         this.x = x;
         this.y = y;
         this.radius = Math.pow(radius,3);
@@ -170,7 +198,15 @@ function main(){
     }
 
     Metaball.prototype.getDiameter = function(x, y){
-            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+        return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    };
+
+    Metaball.prototype.draw = function(){
+        //jk again
+    };
+
+    Metaball.prototype.move = function(){
+        //jk again
     };
 
 
@@ -389,22 +425,41 @@ function main(){
     /////////////////////  INITIALIZE AND LOOP   ////////////////////////
 
     function drawMetaballs(){
-        if (metaballs !== null) {
 
-            for (var x = 0; x < canvas.width; x++) {
-                for (var y = 0; y < canvas.height; y++) {
-                    var sum = 0; //reset the summation
-                    for (var i = 0; i < metaballs.length; i ++){
-                        // console.log("x: ", x, "y: ",y);
-                        // console.log(metaballs[i].getDiameter(x,y));
-                        sum += metaballs[i].getDiameter(x,y);
-                        //sum = NAN
-                        // console.log("sum: ", sum);
+        // if there are metaballs touching, draw a square around them both
+        // else, draw squares around each metaball
+        //for now, draw a square around each metaball and draw it in, make sure you can move one and not the other
+        if (metaballs !== null) {
+            var checkMetaballs = metaballs;//so i can pop them off if they're in a pair
+            var drawBox;
+            for (var i = 0; i < metaballs.length; i++) {
+                drawBox = {
+                    "boundingBox": metaballs[i].boundingBox, //plus the other bounding boxes
+                    "containedMetaBs": [],
+                };
+                drawBox.containedMetaBs.push(metaball[i]);
+                for (var i = 0; i < metaballs[i].currentCollisions.length; i++) {
+                    if (metaballs[i].currentCollisions[i] instanceof Metaball){
+                        drawBox.containedMetaBs.push(metaballs[i].currentCollisions[i]);
                     }
-                    if (sum >= metaballMaxThreshold){
-                        context.fillStyle = "black";
-                        context.fillRect(x,y,1,1);
-                        // console.log("drawing!");
+                }
+            }
+            for (var i = 0; i < drawBox.length; i++) {
+                var minX = drawBox[i].boundingBox.minX;
+                var minY = drawBox[i].boundingBox.minY;
+                var maxX = drawBox[i].boundingBox.maxX;
+                var maxY = drawBox[i].boundingBox.maxY;
+                for (var x = minX; x < maxX; x++) {
+                    for (var y = minY; y < maxY; y++) {
+                        var sum = 0; //reset the summation
+                        for (var i = 0; i < drawBox[i].containedMetaBs.le.xngth; i++) {
+                            sum +=drawBox[i].containedMetaBs[i].getDiameter(x,y);
+                        }
+                        if (sum >= metaballMaxThreshold){
+                            context.fillStyle = "white";
+                            context.fillRect(x,y,1,1);
+                            // console.log("drawing!");
+                        }
                     }
                 }
             }
@@ -422,9 +477,11 @@ function main(){
         global_sprites.push(boid);
     }
 
-    // metaball = makeMetaball(100,100,40);
+    metaball = new Metaball(100,100,40);
     metaballs.push(player1);
-    // metaballs.push(metaball);
+    metaballs.push(metaball);
+    global_sprites.push(player1);
+    global_sprites.push(metaball);
 
 //TODO adjust on window resize
 
