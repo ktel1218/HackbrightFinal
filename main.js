@@ -90,8 +90,15 @@ function main(){
         }
 
         // wall collision
-        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*8000;
-        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*8000;
+        var ease = 0.001;
+        var x1 = this.x;
+        var x2 = world.width;
+        var y1 = this.y;
+        var y2 = world.height;
+
+        this.x += (1/(Math.pow(x1,2))-1/(Math.pow(x2-x1,2)))*20000;
+        this.y += (1/(Math.pow(y1,2))-1/(Math.pow(y2-y1,2)))*20000;
+        // console.log(this.x);
     };
 
     Player.prototype.draw = function(){
@@ -184,6 +191,7 @@ function main(){
         this.nearbySprites = [];
         this.x = x;
         this.y = y;
+        this.maxSpeed = 0.002;
         return this;
     }
 
@@ -206,14 +214,14 @@ function main(){
         for (var i = 0; i < this.nearbySprites.length; i++) {
             sprite = this.nearbySprites[i];
             var partialV = getDirectionTo(sprite.x, sprite.y, this.x, this.y);
-            this.speed = getMagnitude(partialV);
-            partialV.x *= 1/(this.speed * this.speed * this.speed);
-            partialV.y *= 1/(this.speed * this.speed * this.speed);
+            var speed = getMagnitude(partialV);
+            partialV.x *= 1/(speed * speed * speed);
+            partialV.y *= 1/(speed * speed * speed);
             if (sprite instanceof Player){//evade
                 partialV.x *= 10;
                 partialV.y *= 10;
             }
-            else if (2000 > this.speed && this.speed > 90){//group
+            else if (2000 > speed && speed > 90){//group
                 partialV.x = -partialV.x;
                 partialV.y = -partialV.y;
             }
@@ -221,16 +229,23 @@ function main(){
             this.velocity.y += partialV.y;
         }
 
-        if (getMagnitude(this.velocity) > 0.000008){//reduce sensitivity
-            // d = normalize(d);
-            this.x += this.velocity.x * 10000;
-            this.y += this.velocity.y * 10000;
+        this.speed = getMagnitude(this.velocity);
+        if (this.speed > this.maxSpeed){
+            this.speed = this.maxSpeed;
+            this.velocity = normalize(this.velocity);
+            this.velocity.x *= this.speed;
+            this.velocity.y *= this.speed;
         }
+
+
+        this.x += this.velocity.x * 10000;
+        this.y += this.velocity.y * 10000;
+
 
         //// wall collision
 
-        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*5000;
-        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*5000;
+        this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*3000;
+        this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*3000;
 
     };
 
