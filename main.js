@@ -35,7 +35,7 @@ function main(){
         cursor.y = e.targetTouches[0].pageY;
     }, false);
 
-    window.onresize = function(event) {
+    window.onresize = function(e) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         player1.updateDisplay();
@@ -71,6 +71,16 @@ function main(){
     };
 
     Player.prototype.move = function(){
+
+        for (var i = 0; i < this.nearbySprites.length; i++) {
+            var collisionObject = this.collisionDetect(this.nearbySprites[i]);
+            if(collisionObject && collisionObject instanceof Boid){
+                this.radius += 40/(this.radius*1.5);
+                index = global_sprites.indexOf(this.nearbySprites[i]);
+                global_sprites.splice(index,1);
+                console.log("I GOTCHA HAHA");
+            }
+        }
         this.velocity = getDirectionTo(this.displayX, this.displayY, cursor.x,cursor.y);
         this.speed = getMagnitude(this.velocity);
 
@@ -96,9 +106,13 @@ function main(){
         var y1 = this.y;
         var y2 = world.height;
 
-        this.x += (1/(Math.pow(x1,2))-1/(Math.pow(x2-x1,2)))*20000;
-        this.y += (1/(Math.pow(y1,2))-1/(Math.pow(y2-y1,2)))*20000;
-        // console.log(this.x);
+        if (this.x-this.radius <= 0) this.x = 0 + this.radius;
+        if (this.x+this.radius >= world.width) this.x = world.width - this.radius;
+        if (this.y-this.radius <= 0) this.y = 0 + this.radius;
+        if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
+
+        // this.x += (1/(Math.pow(x1,2))-1/(Math.pow(x2-x1,2)))*20000;
+        // this.y += (1/(Math.pow(y1,2))-1/(Math.pow(y2-y1,2)))*20000;
     };
 
     Player.prototype.draw = function(){
@@ -107,6 +121,23 @@ function main(){
         // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
         context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
         context.fill();
+    };
+
+    Player.prototype.collisionDetect = function(object){
+        var a;
+        // if (object instanceof Player){
+        //     a = this.influenceRadius + object.influenceRadius;
+        // }
+
+        if (object instanceof Boid){
+            a = this.radius + object.radius;
+        }
+        var dx = object.x - this.x;
+        var dy = object.y - this.y;
+        var d = dx*dx+dy*dy;
+        if (d <= a*a){
+            return object;
+        }
     };
 
     Player.prototype.getDiameter = function(){
@@ -191,7 +222,7 @@ function main(){
         this.nearbySprites = [];
         this.x = x;
         this.y = y;
-        this.maxSpeed = 0.002;
+        this.maxSpeed = 0.0008;
         return this;
     }
 
@@ -218,8 +249,8 @@ function main(){
             partialV.x *= 1/(speed * speed * speed);
             partialV.y *= 1/(speed * speed * speed);
             if (sprite instanceof Player){//evade
-                partialV.x *= 10;
-                partialV.y *= 10;
+                partialV.x *= sprite.radius;
+                partialV.y *= sprite.radius;
             }
             else if (2000 > speed && speed > 90){//group
                 partialV.x = -partialV.x;
@@ -421,20 +452,33 @@ function main(){
     //     }
     // }
 
-
-    player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
-
-    global_sprites.push(player1);
-
-    quadtreeRoot = new Quadtree(0,0, world.width, world.height);
-    for (var i=0; i<500; i++){
-        var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
-        global_sprites.push(boid);
+    function makeBoids(num_of_boids){
+        // var list_of_boid_objects = [];
+        for (var i = 0; i < num_of_boids; i++) {
+            var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
+            // list_of_boid_objects.push(boid);
+            global_sprites.push(boid);
+        }
+        // return list_of_boid_objects;
     }
 
-    // metaball = makeMetaball(100,100,40);
-    // metaballs.push(player1);
-    // metaballs.push(metaball);
+    function spriteCount(){
+        context.fillStyle="rgba(240,240,240,0.8";
+        context.beginPath();
+        context.arc(45,45,40,0,Math.PI*2,true);
+        context.fill();
+        context.fillStyle="rgb(50,50,50)";
+        context.font="30px Helvetica";
+        context.fillText(global_sprites.length,19,55);
+    }
+
+
+    //intialize player
+    player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
+    global_sprites.push(player1);
+    //initialize quadtree
+    quadtreeRoot = new Quadtree(0,0, world.width, world.height);
+    makeBoids(500);
 
 //TODO adjust on window resize
 
@@ -489,6 +533,7 @@ function main(){
         for (var i = 0; i < quadTreeNodes.length; i++) {
             quadTreeNodes[i].rectangle.draw();
         };
+        // spriteCount();
     }
 
     function loop(){
