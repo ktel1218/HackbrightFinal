@@ -9,8 +9,12 @@ function main(){
         "x": 0,
         "y": 0,
     };
-    canvas.width = 900;
-    canvas.height = 900;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var world = {
+        "width": canvas.width,
+        "height": canvas.height,
+    };
 
     var buffer = 10;
 
@@ -19,92 +23,153 @@ function main(){
         cursor.y = e.pageY;
     };
 
-    var Metaball = {
+    function Metaball(x,y,radius){
 
-        getDiameter : function(x, y){
-            // console.log(this.radius);
-            // console.log("x:",x,"y:",y);
-            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
-        }
-    };
-
-    var Char = {
-
-        "maxSpeed": defaultMaxSpeed,
-
-        move: function(){
-            var ang = getDirection(this.x, this.y, cursor.x, cursor.y);
-            this.speed = getDistance(this.x, this.y, cursor.x, cursor.y);
-
-            // player is never directly at cursor!
-            if(this.speed > 1){
-                this.x = this.x + Math.cos(ang) * (this.speed/25);
-                this.y = this.y + Math.sin(ang) * (this.speed/25);
-            //if player is within 1 px of cursor, stop.
-            }
-
-            if (this.speed > this.maxSpeed)this.speed = this.maxSpeed;//do not exceed max speed
-
-            this.maxX = this.x + this.boundingBox/2;
-            this.minX = this.x - this.boundingBox/2;
-            this.maxY = this.y + this.boundingBox/2;
-            this.minY = this.y - this.boundingBox/2;
-        },
-
-        getDiameter : function(x, y){
-            // console.log(this.radius);
-            // console.log("x:",x,"y:",y);
-            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
-        }
-    };
-
-
-    function getDistance(x1, y1, x2, y2)
-    {
-        squareX = Math.pow((x1-x2),2);
-        squareY = Math.pow((y1-y2),2);
-        return Math.sqrt(squareX + squareY);
-    }
-
-    function getDirection(x1, y1, x2, y2)
-    {
-        deltaY = y2 - y1;
-        deltaX = x2 - x1;
-        return Math.atan2(deltaY,deltaX);
-    }
-
-    function makeMetaball(x,y,radius){
-        Empty = function(){};
-        Empty.prototype = Metaball;
-        ball = new Empty();
-        ball.x = x;
-        ball.y = y;
-        ball.radius = Math.pow(radius,3);
-        ball.maxX = ball.x + radius + buffer;
-        ball.minX = ball.x - (radius + buffer);
-        ball.maxY = ball.y + radius + buffer;
-        ball.minY = ball.y - (radius + buffer);
+        this.x = x;
+        this.y = y;
+        this.radius = Math.pow(radius,3);
+        this.maxX = x + radius;
+        this.minX = x - radius;
+        this.maxY = y + radius;
+        this.minY = y - radius;
         // ball.radius = radius;
 
-        return ball;
+        return this;
     }
 
-    function makeChar(x,y,radius){
-        Empty = function(){};
-        Empty.prototype = Char;
-        charA = new Empty();
-        charA.x = x;
-        charA.y = y;
-        charA.radius = Math.pow(radius,3);
-        charA.boundingBox = radius*2 + buffer;
+    Metaball.prototype.getDiameter = function(x, y){
+        return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    };
 
-        // charA.radius = radius;
 
-        return charA;
+
+    function Player(x,y,radius){
+
+        this.maxSpeed = defaultMaxSpeed;
+        this.nearbySprites = [];
+        this.x = x;
+        this.y = y;
+        this.speed = 0;
+        this.radius = radius;
+        this.metaballRadius = Math.pow(radius, 3);
+        this.minX = x - radius;
+        this.maxX = x + radius;
+        this.minY = y - radius;
+        this.maxY = y + radius;
+        return this;
     }
 
+
+    Player.prototype.move = function(){
+
+        this.velocity = getDirectionTo(this.x, this.y, cursor.x, cursor.y);
+        this.speed = getMagnitude(this.velocity);
+
+        //do not exceed max speed
+        if (this.speed > this.maxSpeed){
+        this.speed = this.maxSpeed;
+        this.velocity = normalize(this.velocity);
+        this.velocity.x *= this.speed;
+        this.velocity.y *= this.speed;
+        }
+
+        // player is never directly at cursor!
+        if(this.speed > 1){
+            this.x += this.velocity.x/18;
+            this.y += this.velocity.y/18;
+        //if player is within 1 px of cursor, stop.
+        }
+
+        // wall collision
+
+        if (this.x-this.radius <= 0)this.x = 0 + this.radius;
+        if (this.x+this.radius >= world.width) this.x = world.width - this.radius;
+        if (this.y-this.radius <= 0) this.y = 0 + this.radius;
+        if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
+
+        // console.log(this.x, this.y);
+        // console.log(world.width, world.height);
+    };
+
+    Player.prototype.draw = function(){
+        context.beginPath();
+        context.fillStyle = "rgba(220,220,220,.85)";
+        // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
+        context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
+        context.fill();
+    };
+
+    Player.prototype.onCollisionDetect = function(list){
+        for (var i = 0; i < list.length; i++) {
+            var collisionObject = this.collisionCheck(list[i]);
+            if(collisionObject && collisionObject instanceof Boid){
+                this.radius += 40/(this.radius*1.5); // get bigger but approach some max
+                // index = global_sprites.indexOf(list[i]);
+                // global_sprites.splice(index,1);
+                collisionObject.die();
+            }
+        }
+    };
+
+    Player.prototype.collisionCheck = function(object){
+        var a;
+        if (object instanceof Metaball){
+            a = this.radius+20 + object.radius+20;
+        }
+
+        if (object instanceof Boid){
+            a = this.radius + object.radius;
+        }
+        var dx = object.x - this.x;
+        var dy = object.y - this.y;
+        var d = dx*dx+dy*dy;
+        if (d <= a*a){
+            return object;
+        }
+    };
+
+    //used for Metaball graphics
+    Player.prototype.getDiameter = function(x, y){
+        return this.metaballRadius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    };
+
+
+    function normalize(vector){
+        //make a unit vector
+        var length = getMagnitude(vector);
+        var normalizedVector = {
+            "x": (vector.x/length),
+            "y": (vector.y/length),
+        };
+        return normalizedVector;
+    }
+
+    function getDirectionTo(x1,y1,x2,y2){
+        var deltaY = y2 - y1;
+        var deltaX = x2 - x1;
+
+        var direction = {
+            "x": deltaX,
+            "y": deltaY,
+        };
+        // console.log(direction.x, direction.y);
+        return direction;
+    }
+
+    function getMagnitude(vector){
+            var x = vector.x;
+            var y = vector.y;
+            // console.log(x,y);
+            var n = Math.sqrt(x*x + y*y);
+            // console.log(n);
+            // console.log(Math.abs(n));
+            return Math.abs(n);
+    }
 
     function draw_metaballs(object){
+        //list of metaballs to draw
+        //if they're touching, remove the one being touched
+        //draw touching ones together
         var startX = object.minX;
         var endX = object.maxX;
         var startY = object.minY;
@@ -123,6 +188,16 @@ function main(){
                     }
                     if (sum >= MAX_THRESHOLD){
                         context.fillStyle = "black";
+                        context.fillRect(x,y,2,2);
+                        // console.log("drawing!");
+                    }
+                    if (sum >= MAX_THRESHOLD -20){
+                        context.fillStyle = "rgba(0,0,0.1)";
+                        context.fillRect(x,y,1,1);
+                        // console.log("drawing!");
+                    }
+                    if (sum >= MAX_THRESHOLD -10){
+                        context.fillStyle = "rgba(0,0,220,0.5)";
                         context.fillRect(x,y,1,1);
                         // console.log("drawing!");
                     }
@@ -131,31 +206,32 @@ function main(){
         }
     }
 
-    char1 = makeChar(200, 200, 40);
-    metaball1 = makeMetaball(100,100,60);
+    player1 = new Player(100, 100, 20);
+    metaball1 = new Metaball(canvas.width/2,canvas.height/2,30);
 
-    metaballs.push(char1);
+    metaballs.push(player1);
     metaballs.push(metaball1);
 
     // for (var i = 0; i < metaballs.length; i++) {
-    //     console.log(metaballs[i].getDiameter(99,99));
+    //     console.log(metaballs[i].getDiameter(20,20));
     // }
 
-    // draw_metaballs();
 
     function clearCanvas(){
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     function animate(){
-        char1.move();
+        player1.move();
     }
 
     function render(){
-        if ((char1.minX < metaball1.maxX && char1.maxX > metaball1.minX) &&
-                    (char1.minY < metaball1.maxY && char1.maxY > metaball1.minY)){
-            draw_metaballs(char1);
-            draw_metaballs(metaball1);
+        draw_metaballs(metaball1);
+
+        if ((player1.minX < metaball1.maxX && player1.maxX > metaball1.minX) &&
+                    (player1.minY < metaball1.maxY && player1.maxY > metaball1.minY)){
+            // draw_metaballs(player1);
+            // draw_metaballs(metaball1);
         }
     }
 

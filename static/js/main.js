@@ -19,6 +19,7 @@ function main(){
     var metaballs = [];
     var global_sprites = [];
     var quadTreeNodes = [];
+    var random = new Alea("Katie", "Lefevre", "rulz", 5000);
 
 
     //////////////////  MOUSE/WINDOW LISTENERS   /////////////////////
@@ -46,7 +47,6 @@ function main(){
 
 
 
-
     function Player(x,y,radius){
 
         this.maxSpeed = defaultMaxSpeed;
@@ -70,17 +70,13 @@ function main(){
         this.displayY = canvas.height/2;
     };
 
+    Player.prototype.step = function(){
+        this.onCollisionDetect(this.nearbySprites);
+        this.move();
+    };
+
     Player.prototype.move = function(){
 
-        for (var i = 0; i < this.nearbySprites.length; i++) {
-            var collisionObject = this.collisionDetect(this.nearbySprites[i]);
-            if(collisionObject && collisionObject instanceof Boid){
-                this.radius += 40/(this.radius*1.5);
-                index = global_sprites.indexOf(this.nearbySprites[i]);
-                global_sprites.splice(index,1);
-                console.log("I GOTCHA HAHA");
-            }
-        }
         this.velocity = getDirectionTo(this.displayX, this.displayY, cursor.x,cursor.y);
         this.speed = getMagnitude(this.velocity);
 
@@ -100,19 +96,11 @@ function main(){
         }
 
         // wall collision
-        var ease = 0.001;
-        var x1 = this.x;
-        var x2 = world.width;
-        var y1 = this.y;
-        var y2 = world.height;
 
         if (this.x-this.radius <= 0) this.x = 0 + this.radius;
         if (this.x+this.radius >= world.width) this.x = world.width - this.radius;
         if (this.y-this.radius <= 0) this.y = 0 + this.radius;
         if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
-
-        // this.x += (1/(Math.pow(x1,2))-1/(Math.pow(x2-x1,2)))*20000;
-        // this.y += (1/(Math.pow(y1,2))-1/(Math.pow(y2-y1,2)))*20000;
     };
 
     Player.prototype.draw = function(){
@@ -123,7 +111,19 @@ function main(){
         context.fill();
     };
 
-    Player.prototype.collisionDetect = function(object){
+    Player.prototype.onCollisionDetect = function(list){
+        for (var i = 0; i < list.length; i++) {
+            var collisionObject = this.collisionCheck(list[i]);
+            if(collisionObject && collisionObject instanceof Boid){
+                this.radius += 40/(this.radius*1.5); // get bigger but approach some max
+                // index = global_sprites.indexOf(list[i]);
+                // global_sprites.splice(index,1);
+                collisionObject.die();
+            }
+        }
+    };
+
+    Player.prototype.collisionCheck = function(object){
         var a;
         // if (object instanceof Player){
         //     a = this.influenceRadius + object.influenceRadius;
@@ -140,15 +140,10 @@ function main(){
         }
     };
 
+    //used for Metaball graphics
     Player.prototype.getDiameter = function(){
         return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
     };
-
-    // Player.prototype.diameter.__defineGetter__("value", function(){
-    //     return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
-    // });
-
-    // Player.diameter
 
     /////////////////////////  PARTICLES   ////////////////////////////
 
@@ -194,21 +189,126 @@ function main(){
     /////////////////////////  OTHER PLAYER   ////////////////////////////
 
 
+    function OtherPlayer(x,y,radius){
 
-
-
-    function Metaball(x,y,radius){
-
+        this.maxSpeed = defaultMaxSpeed;
+        this.nearbySprites = [];
         this.x = x;
         this.y = y;
-        this.radius = Math.pow(radius,3);
-
+        this.radius = radius;
+        this.speed = 0;
+        this.influenceRadius = radius * 4 * (this.speed+20);
+        this.playerCursor = {
+            "x": world.width/2,
+            "y": world.height/2
+        };
         return this;
     }
 
-    Metaball.prototype.getDiameter = function(x, y){
-            return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+
+    OtherPlayer.prototype.step = function(){
+        this.onCollisionDetect(this.nearbySprites);
+        this.move();
     };
+
+    OtherPlayer.prototype.move = function(){
+        // num = 20+Math.random()*9;
+        // num *= Math.floor(Math.random()*2) == 1 ? 1 : -1;
+        // this.playerCursor.x = this.x + num;
+
+        // num = 20+Math.random()*9;
+        // num *= Math.floor(Math.random()*2) == 1 ? 1 : -1;
+        // this.playerCursor.y = this.y + num;
+
+        // this.velocity = getDirectionTo(this.playerCursor.x, this.playerCursor.y);
+        // this.speed = getMagnitude(this.velocity);
+
+        // //do not exceed max speed
+        // if (this.speed > this.maxSpeed){
+        // this.speed = this.maxSpeed;
+        // this.velocity = normalize(this.velocity);
+        // this.velocity.x *= this.speed;
+        // this.velocity.y *= this.speed;
+        // }
+
+        // // player is never directly at cursor!
+        // if(this.speed > 1){
+        //     this.x += this.velocity.x/18;
+        //     this.y += this.velocity.y/18;
+        // //if player is within 1 px of cursor, stop.
+        // }
+
+        // wall collision
+
+        // if (this.x-this.radius <= 0) this.x = 0 + this.radius;
+        // if (this.x+this.radius >= world.width) this.x = world.width - this.radius;
+        // if (this.y-this.radius <= 0) this.y = 0 + this.radius;
+        // if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
+
+    };
+
+    OtherPlayer.prototype.draw = function(){
+        this.displayX = this.x - (player1.x-player1.displayX);
+        this.displayY = this.y - (player1.y-player1.displayY);
+        context.beginPath();
+        context.fillStyle = "rgba(220,220,220,.85)";
+        // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
+        context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
+        context.fill();
+    };
+
+    OtherPlayer.prototype.onCollisionDetect = function(list){
+        for (var i = 0; i < list.length; i++) {
+            var collisionObject = this.collisionCheck(list[i]);
+            if(collisionObject && collisionObject instanceof Boid){
+                this.radius += 40/(this.radius*1.5); // get bigger but approach some max
+                index = global_sprites.indexOf(list[i]);
+                global_sprites.splice(index,1);
+            }
+        }
+    };
+
+    OtherPlayer.prototype.collisionCheck = function(object){
+        var a;
+        // if (object instanceof Player){
+        //     a = this.influenceRadius + object.influenceRadius;
+        // }
+
+        if (object instanceof Boid){
+            a = this.radius + object.radius;
+        }
+
+        var dx = object.x - this.x;
+        var dy = object.y - this.y;
+        var d = dx*dx+dy*dy;
+        if (d <= a*a){
+            return object;
+        }
+    };
+
+    Player.prototype.getDiameter = function(){
+        return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    };
+
+    // Player.prototype.diameter.__defineGetter__("value", function(){
+    //     return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    // });
+
+    // Player.diameter
+
+
+    // function Metaball(x,y,radius){
+
+    //     this.x = x;
+    //     this.y = y;
+    //     this.radius = Math.pow(radius,3);
+
+    //     return this;
+    // }
+
+    // Metaball.prototype.getDiameter = function(x, y){
+    //         return this.radius / (Math.pow(x - this.x,2) + Math.pow(y - this.y,2));
+    // };
 
 
     //////////////////////////   BOID   ///////////////////////////////
@@ -227,12 +327,16 @@ function main(){
     }
 
     Boid.prototype.draw = function(){
-        var displayX = this.x - (player1.x-player1.displayX);
-        var displayY = this.y - (player1.y-player1.displayY);
+        this.displayX = this.x - (player1.x-player1.displayX);
+        this.displayY = this.y - (player1.y-player1.displayY);
         context.fillStyle = "rgba(200,0,200,0.85)";
         context.beginPath();
-        context.arc(displayX, displayY, this.radius, 0,Math.PI*2,true);
+        context.arc(this.displayX, this.displayY, this.radius, 0,Math.PI*2,true);
         context.fill();
+    };
+
+    Boid.prototype.step = function(){
+        this.move();
     };
 
     Boid.prototype.move = function(){
@@ -248,7 +352,7 @@ function main(){
             var speed = getMagnitude(partialV);
             partialV.x *= 1/(speed * speed * speed);
             partialV.y *= 1/(speed * speed * speed);
-            if (sprite instanceof Player){//evade
+            if (sprite instanceof Player || sprite instanceof OtherPlayer){//evade
                 partialV.x *= sprite.radius;
                 partialV.y *= sprite.radius;
             }
@@ -277,11 +381,14 @@ function main(){
 
         this.x += (1/(this.x*this.x)-1/((world.width-this.x)*(world.width-this.x)))*3000;
         this.y += (1/(this.y*this.y)-1/((world.height-this.y)*(world.height-this.y)))*3000;
+        if (this.x-this.radius <= 0) this.x = 0 + this.radius;
+        if (this.x+this.radius >= world.width) this.x = world.width - this.radius;
+        if (this.y-this.radius <= 0) this.y = 0 + this.radius;
+        if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
 
     };
 
-
-    Boid.prototype.collisionDetect = function(object){
+    Boid.prototype.collisionCheck = function(object){
         var a = this.radius + object.radius;
         var dx = object.x - this.x;
         var dy = object.y - this.y;
@@ -289,9 +396,18 @@ function main(){
         return (d <= a*a);
     };
 
+    Boid.prototype.die = function(){
+        index = global_sprites.indexOf(this);
+        global_sprites.splice(index,1);
+        context.fillStyle = "rgba(220,220,220,0.85)";
+        context.beginPath();
+        context.arc(this.displayX, this.displayY, this.radius*3, 0,Math.PI*2,true);
+        context.fill();
+    };
 
 
-    ////////////////////////   QuadTree   /////////////////////////////
+
+    ////////////////////////   QUADTREE   /////////////////////////////
 
 
 
@@ -455,7 +571,7 @@ function main(){
     function makeBoids(num_of_boids){
         // var list_of_boid_objects = [];
         for (var i = 0; i < num_of_boids; i++) {
-            var boid = new Boid(Math.random()*world.width, Math.random()*world.height);
+            var boid = new Boid(random()*world.width, random()*world.height);
             // list_of_boid_objects.push(boid);
             global_sprites.push(boid);
         }
@@ -476,6 +592,9 @@ function main(){
     //intialize player
     player1 = new Player(world.width/2,world.height/2,20);//starting x, y, and radius
     global_sprites.push(player1);
+    //initialize OTHER player
+    player2 = new OtherPlayer(300, 300, 20);
+    global_sprites.push(player2);
     //initialize quadtree
     quadtreeRoot = new Quadtree(0,0, world.width, world.height);
     makeBoids(500);
@@ -483,18 +602,18 @@ function main(){
 //TODO adjust on window resize
 
     for (var i = 0; i < world.width/16; i++) {
-        var foreLayer = 1+Math.random()*5; // foreground depth index(1 - 5)
+        var foreLayer = 1+random()*5; // foreground depth index(1 - 5)
         var foresquare = new Circle(
-            canvas.width/2+Math.random()*world.width*foreLayer,
-            canvas.height/2+Math.random()*world.height*foreLayer,
+            canvas.width/2+random()*world.width*foreLayer,
+            canvas.height/2+random()*world.height*foreLayer,
             5, foreLayer);
         particles.push(foresquare);
     }
     for (var j = 0; j < world.width/16; j++) {
-        var backLayer = 0.2+Math.random()*0.4; // background index (.2 - .4)
+        var backLayer = 0.2+random()*0.4; // background index (.2 - .4)
         var backsquare = new Circle(
-            canvas.width/2+Math.random()*world.width*backLayer,
-            canvas.height/2+Math.random()*world.height*backLayer,
+            canvas.width/2+random()*world.width*backLayer,
+            canvas.height/2+random()*world.height*backLayer,
             5, backLayer);
         particles.push(backsquare);
     }
@@ -516,7 +635,7 @@ function main(){
     function animate(){
         // player1.move();
         for (var i = 0; i < global_sprites.length; i++) {
-            global_sprites[i].move();
+            global_sprites[i].step();
             global_sprites[i].nearbySprites = [];
         }
     }
