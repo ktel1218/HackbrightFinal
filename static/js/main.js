@@ -109,6 +109,23 @@ function main(){
         // context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
         context.arc(this.displayX,this.displayY,this.radius,0,Math.PI*2,true);
         context.fill();
+
+        var eyeDisplayX = this.displayX + (this.velocity.x/670)*this.radius;
+        var eyeDisplayY = this.displayY + (this.velocity.y/670)*this.radius;
+
+        context.fillStyle = "white";
+        context.beginPath();
+        context.arc(eyeDisplayX,eyeDisplayY,this.radius/1.8,0,Math.PI*2,true);
+        context.fill();
+
+        eyeDisplayX = this.displayX + (this.velocity.x/550)*this.radius;
+        eyeDisplayY = this.displayY + (this.velocity.y/550)*this.radius;
+
+        context.fillStyle = "rgba(0,0,220,0.85)";
+        context.beginPath();
+        context.arc(eyeDisplayX,eyeDisplayY,this.radius/2.5,0,Math.PI*2,true);
+        context.fill();
+
     };
 
     Player.prototype.onCollisionDetect = function(list){
@@ -399,7 +416,7 @@ function main(){
     Boid.prototype.die = function(){
         index = global_sprites.indexOf(this);
         global_sprites.splice(index,1);
-        context.fillStyle = "rgba(220,220,220,0.85)";
+        context.fillStyle = "rgba(220,0,0,0.85)";
         context.beginPath();
         context.arc(this.displayX, this.displayY, this.radius*3, 0,Math.PI*2,true);
         context.fill();
