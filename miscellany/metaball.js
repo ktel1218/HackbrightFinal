@@ -1,6 +1,6 @@
 function main(){
     // var MIN_THRESHOLD = 80;
-    var MAX_THRESHOLD = 100;
+    var MAX_THRESHOLD = 80;
     var canvas = document.getElementById("canv");
     var context = canvas.getContext('2d');
     var metaballs = [];
@@ -191,22 +191,12 @@ function main(){
                         context.fillRect(x,y,2,2);
                         // console.log("drawing!");
                     }
-                    if (sum >= MAX_THRESHOLD -20){
-                        context.fillStyle = "rgba(0,0,0.1)";
-                        context.fillRect(x,y,1,1);
-                        // console.log("drawing!");
-                    }
-                    if (sum >= MAX_THRESHOLD -10){
-                        context.fillStyle = "rgba(0,0,220,0.5)";
-                        context.fillRect(x,y,1,1);
-                        // console.log("drawing!");
-                    }
                 }
             }
         }
     }
 
-    player1 = new Player(100, 100, 20);
+    player1 = new Player(100, 100, 30);
     metaball1 = new Metaball(canvas.width/2,canvas.height/2,30);
 
     metaballs.push(player1);
