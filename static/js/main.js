@@ -24,7 +24,9 @@ function main() {
     var quadtreeRoot;
     var quadTreeLimit = world.width / 4;
     var timer = 0;
-    var timeLimit = 6000; //one minute
+    var timeLimit = 1000; //one minute
+    var numberOfBoids = 2000;
+    var remainingBoidCount;
 
     /////////////////////  SERVER EXPERIMENT   ////////////////////////
 
@@ -49,7 +51,7 @@ function main() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         player1.updateDisplay();
-        if (timer>timeLimit){
+        if (timer > timeLimit) {
             end();
         }
     };
@@ -101,7 +103,7 @@ function main() {
             this.speed *= 2;
             // this.radius *= 1.25;
         }
-        else if (this.poisoned){
+        else if (this.poisoned) {
             this.maxSpeed = defaultMaxSpeed / 2;
             this.speed /= 2;
         }
@@ -140,17 +142,17 @@ function main() {
         var bodyColor;
         var irisColor;
         var pupilColor;
-        if (this.superState){
+        if (this.superState) {
             bodyColor = "rgba(40,0,75,1)";//dark purple
             irisColor = "rgba(0, 255, 100, 0.85)"; // green
             pupilColor = "white";
-            if (2 % Math.floor(random()*2) == 0){//strobe
+            if (2 % Math.floor(random() * 2) === 0) {//strobe
                 pupilColor = "rgba(0, 200, 0, 0.85)";//dark green
                 irisColor = "white";
                 bodyColor = "rgba(150,150,250,0.85)";//light blue
             }
         }
-        else if (this.poisoned){
+        else if (this.poisoned) {
             bodyColor = "rgba(155, 175, 155, 0.85)"; // grey green
             pupilColor = "rgba(0, 155, 0, 0.85)";
             irisColor = "rgb(150, 125, 125)";
@@ -158,9 +160,9 @@ function main() {
 
         }
         else {
-            var bodyColor = "rgba(220,220,220,.85)";
-            var irisColor = "white";
-            var pupilColor = "rgba(0, 200, 100, 0.85)";
+            bodyColor = "rgba(220,220,220,.85)";
+            irisColor = "white";
+            pupilColor = "rgba(0, 200, 100, 0.85)";
         }
 
 
@@ -190,34 +192,36 @@ function main() {
     Player.prototype.onCollisionDetect = function (list) {
 
         for (var i = 0; i < list.length; i++) {
-            var collisionObject = this.collisionCheck(list[i]);
+            var player = this;
+            var collisionObject = player.collisionCheck(list[i]);
             if (collisionObject && collisionObject instanceof Boid) {
-                this.radius += 40 / (this.radius * 1.5); // get bigger but approach some max
+                player.radius += 40 / (player.radius * 1.5); // get bigger but approach some max
 
                 collisionObject.die();
                 //snitch
                 if (collisionObject instanceof Snitch) {
-                    var that = this;
-                    if (that.poisoned){
-                        that.poisoned = false;
+                    if (player.poisoned) {
+                        player.poisoned = false;
                     }
-                    that.superState = true;
+                    player.superState = true;
 
                     setTimeout(function () {
-                        that.superState = false;
+                        player.superState = false;
                     }, 8000);
                 }
                 //poison
                 if (collisionObject instanceof Poison) {
-                    var that = this;
-                    if (that.superState){
-                        that.superState = false;
+                    if (player.superState) {
+                        player.superState = false;
                     }
-                    that.poisoned = true;
+                    player.poisoned = true;
 
                     setTimeout(function () {
-                        that.poisoned = false;
+                        player.poisoned = false;
                     }, 8000);
+                }
+                else {
+                    remainingBoidCount --; //only decrease count if its not a poison Boid
                 }
             }
         }
@@ -591,7 +595,7 @@ function main() {
         player1 = new Player(world.width / 2, world.height / 2, 20);
         global_sprites.push(player1);
 
-        makeBoids(2500);
+        makeBoids(numberOfBoids);
 
         makeParticles();
 
@@ -614,7 +618,10 @@ function main() {
         for (var i = 0; i < num_of_boids / 50; i++) {
             var poison = new Poison(random() * world.width, random() * world.height);
             global_sprites.push(poison);
+            numberOfBoids ++;
         }
+
+        remainingBoidCount = numberOfBoids;
     }
 
     function makeParticles() {
@@ -639,23 +646,35 @@ function main() {
     function spriteCount() {
         context.fillStyle = "rgba(240, 240, 240, 0.8";
         context.beginPath();
-        context.arc(45, 45, 40, 0, Math.PI * 2, true);
+        context.arc(45, 50, 45, 0, Math.PI * 2, true);
         context.fill();
         context.fillStyle = "rgb(50, 50, 50)";
-        context.font = "30px Helvetica";
-        context.fillText(global_sprites.length - 1, 19, 55);
+        context.textAlign = "center";
+        context.font = "30px Tahoma";
+        context.fillText(numberOfBoids - remainingBoidCount, 45, 60);
+    }
+
+    function countDown() {
+        context.fillStyle = "rgba(240, 240, 240, 0.5";
+        context.beginPath();
+        var centerX = canvas.width - 50;
+        var centerY = 50;
+
+        context.arc(centerX, centerY, 45, 0, Math.PI * 2, true);
+        context.fill();
+        var radians = timer / timeLimit * 2;
+        context.fillStyle = "rgba(40, 0, 75, 0.75)";
+
+        context.beginPath();
+        context.arc(centerX, centerY, 40, 0, Math.PI * radians, true);
+        context.lineTo(centerX, centerY);
+        context.fill();
     }
 
     function timeOut() {
         timer ++;
         return (timer > timeLimit);
     }
-
-
-
-
-//TODO adjust on window resize
-
 
 
     function prepCanvas() {
@@ -691,7 +710,8 @@ function main() {
         for (var k = 0; k < quadTreeNodes.length; k++) {
             quadTreeNodes[k].rectangle.draw();
         }
-        // spriteCount();
+        spriteCount();
+        countDown();
     }
 
     function loop() {
@@ -708,11 +728,12 @@ function main() {
     }
 
     function end() {
-        console.log("END");
+        var score = (Math.round(-remainingBoidCount / numberOfBoids * 100)) + 100;
         prepCanvas();
         context.fillStyle = "white";
-        context.font = "75px Helvetica";
-        context.fillText("END", canvas.width / 2, canvas.height / 2);
+        context.font = "75px Verdana";
+        context.textAlign = "center";
+        context.fillText(score + "% CLEARED", canvas.width / 2, canvas.height / 2);
     }
 
     init();
