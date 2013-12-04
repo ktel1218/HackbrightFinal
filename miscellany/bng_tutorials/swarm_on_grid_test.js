@@ -28,7 +28,7 @@ function main(){
 
     var Char = {
         "maxSpeed": defaultMaxSpeed,
-        "forceFactor": 10,
+        "forceFactor": 1000,
         "influence": 50,
 
         move: function(){
@@ -45,7 +45,10 @@ function main(){
             //if player is within 1 px of cursor, stop.
             }
 
-            //do not exceed max speed
+            if (this.x - this.radius <= 30) this.x = 30 + this.radius;
+            if (this.x + this.radius >= canvas.width-30)this.x = canvas.width-30 - this.radius;
+            if (this.y - this.radius <= 20) this.y = 20 + this.radius;
+            if (this.y + this.radius >= canvas.height-40) this.y = canvas.height-40 - this.radius;
 
         },
 
@@ -87,8 +90,8 @@ function main(){
                 //     console.log(currentCoord.vector.x, currentCoord.vector.y, wallVX, wallVY);
                 // }
             
-                this.x += currentCoord.vector.x/10;
-                this.y += currentCoord.vector.y/10;
+                this.x += currentCoord.vector.x/5;
+                this.y += currentCoord.vector.y/5;
             } catch (e) {
                 for (var i = 0; i < sprites.length; i++) {
                     if(sprites[i] === this){
@@ -96,8 +99,10 @@ function main(){
                     }
                 }
             }
-            // this.x *= wallVX;
-            // this.y *= wallVY;
+            if (this.x - this.radius <= 10) this.x = 10 + this.radius;
+            if (this.x + this.radius >= canvas.width - 30) this.x = canvas.width - 30 - this.radius;
+            if (this.y - this.radius <= 10) this.y = 10 + this.radius;
+            if (this.y + this.radius >= canvas.height - 30) this.y = canvas.height - 30 - this.radius;
         },
 
         draw: function(){
@@ -144,7 +149,7 @@ function main(){
         logVect: function(){
             context.beginPath();
             context.moveTo(this.x, this.y);
-            context.lineTo(this.x + this.vector.x/25, this.y + this.vector.y/25);
+            context.lineTo(this.x + this.vector.x/20, this.y + this.vector.y/20);
             context.stroke();
         }
     };
@@ -290,8 +295,8 @@ function main(){
     function computeForceVector(coord, sprite){
         var velocity = {x: 0, y: 0};
         var force = computePointForce(coord, sprite);
-        velocity.x += force.x;
-        velocity.y += force.y;
+        velocity.x += force.x * sprite.forceFactor;
+        velocity.y += force.y * sprite.forceFactor;
         // console.log(velocity.x, velocity.y);
         return velocity;
     }
@@ -320,8 +325,8 @@ function main(){
 
     var char1 = makeChar(50+Math.random()*200, 50+Math.random()*200,25);
 
-    for (var i = 0; i < 1; i++) {
-        var boid = makeBoid(50+Math.random()*200, 50+Math.random()*200,15);
+    for (var i = 0; i < 6; i++) {
+        var boid = makeBoid(50+Math.random()*(canvas.width), 50+Math.random()*(canvas.width),15);
         sprites.push(boid);
     }
 

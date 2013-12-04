@@ -1,4 +1,48 @@
 body{
     overflow: hidden;
     margin: 0;
+    font-family: 'Exo', sans-serif;
+    background-color: #000000;
+    color: #ffffff;
 }
+
+h1{
+    font-family: 'Chango', cursive;
+    font-size: 4em;
+}
+
+li {
+    list-style-type: none;
+    float: left;
+    margin-right: 6%;
+}
+
+li h1 {
+    font-size: 1.2em;
+    color: #ffffff;
+}
+li h2 {
+    font-size: 1.15em;
+    color: rgba(120, 20, 130, 0.85);
+}
+
+li .active {
+
+    color: rgba(160, 20, 170, 0.85);
+}
+
+a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.navbar{
+    margin: 2em;    
+}
+
+.content{
+    margin: 5em;
+    clear: both;
+}
+
+

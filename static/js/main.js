@@ -24,7 +24,7 @@ function main() {
     var quadtreeRoot;
     var quadTreeLimit = world.width / 4;
     var timer = 0;
-    var timeLimit = 1000; //one minute
+    var timeLimit = 3000; //one minute
     var numberOfBoids = 2000;
     var remainingBoidCount;
 
@@ -728,7 +728,13 @@ function main() {
     }
 
     function end() {
-        var score = (Math.round(-remainingBoidCount / numberOfBoids * 100)) + 100;
+        var score = (-remainingBoidCount / numberOfBoids * 100) + 100;
+        if (score < 1) {
+            score = score.toFixed(2);
+        }
+        else {
+            score = Math.round(score);
+        }
         prepCanvas();
         context.fillStyle = "white";
         context.font = "75px Verdana";

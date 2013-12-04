@@ -87,8 +87,10 @@ function main(){
         if (this.y-this.radius <= 0) this.y = 0 + this.radius;
         if (this.y+this.radius >= world.height) this.y = world.height - this.radius;
 
-        // console.log(this.x, this.y);
-        // console.log(world.width, world.height);
+        this.minX = this.x - this.radius;
+        this.maxX = this.x + this.radius;
+        this.minY = this.y - this.radius;
+        this.maxY = this.y + this.radius;
     };
 
     Player.prototype.draw = function(){
@@ -217,12 +219,8 @@ function main(){
 
     function render(){
         draw_metaballs(metaball1);
+        draw_metaballs(player1);
 
-        if ((player1.minX < metaball1.maxX && player1.maxX > metaball1.minX) &&
-                    (player1.minY < metaball1.maxY && player1.maxY > metaball1.minY)){
-            // draw_metaballs(player1);
-            // draw_metaballs(metaball1);
-        }
     }
 
     function loop(){
