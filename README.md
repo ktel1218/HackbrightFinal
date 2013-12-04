@@ -8,9 +8,9 @@ try to clear the area.
 
 ## Notable Features
 
-- [x] Scale-able swarming Ai
-- [x] Vector based control for ease in transferring to mobile platforms
-- [ ] Multiplayer with signaling server and p2p connections
+- Scale-able swarming Ai
+- Vector based control for ease in transferring to mobile platforms
+- Multiplayer with signaling server and p2p connections
 
 ## Link to the Game
 ###[go play it](https://katielefevre.com) 
