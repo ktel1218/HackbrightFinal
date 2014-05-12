@@ -6,9 +6,7 @@ function main(){
         "y": 0
     };
 
-    var wallForceFactor = 3;
-    var playerForceFactor = 8;
-    var defaultMaxSpeed = 400;
+    var defaultMaxSpeed = 600;
     var gridSize = 10;
 
     var message = [];
@@ -28,7 +26,6 @@ function main(){
 
     var Char = {
         "maxSpeed": defaultMaxSpeed,
-        "forceFactor": 1000,
         "influence": 50,
 
         move: function(){
@@ -65,33 +62,24 @@ function main(){
             for (var i = 0; i < closestCoords.length; i++) {
                 var coordX = closestCoords[i].x;
                 var coordY = closestCoords[i].y;
-                var d = computeForceVector(closestCoords[i], this);
-                if (getMagnitude(d) > 0.00002){//reduce sensitivity
-                    d = normalize(d);
-                    closestCoords[i].vector.x += d.x;
-                    closestCoords[i].vector.y += d.y;
-                }
+                var d = getDirectionTo(this, closestCoords[i]);
+                d = normalize(d);
+                closestCoords[i].vector.x += d.x;
+                closestCoords[i].vector.y += d.y;
             }
         }
     };
 
     var Boid = {
 
-        "forceFactor": 30,
-        "influence":30,
-        
+        "influence": 30,
+
         move: function(){
             try {
                 var currentCoord = coordPlane[Math.round(this.x/gridSize)][Math.round(this.y/gridSize)];
-                // wallVX = 1/Math.pow(this.x,2) - 1/Math.pow((canvas.width - this.x),2)/10;
-                // wallVY = 1/Math.pow(this.y,2) - 1/Math.pow((canvas.height - this.y),2)/10;
 
-                // if(Math.random() < .1){
-                //     console.log(currentCoord.vector.x, currentCoord.vector.y, wallVX, wallVY);
-                // }
-            
-                this.x += currentCoord.vector.x/5;
-                this.y += currentCoord.vector.y/5;
+                this.x += currentCoord.vector.x;
+                this.y += currentCoord.vector.y;
             } catch (e) {
                 for (var i = 0; i < sprites.length; i++) {
                     if(sprites[i] === this){
@@ -106,7 +94,6 @@ function main(){
         },
 
         draw: function(){
-            // context.fillStyle = "rgb(0,200,100)";
             context.beginPath();
             context.arc(this.x,this.y,this.radius,0,Math.PI*2,true);
             context.fill();
@@ -119,11 +106,9 @@ function main(){
                 var coordX = closestCoords[i].x;
                 var coordY = closestCoords[i].y;
                 var d = computeForceVector(closestCoords[i], this);
-                if (getMagnitude(d) > 0.00002){//reduce sensitivity
-                    d = normalize(d);
-                    closestCoords[i].vector.x += d.x;
-                    closestCoords[i].vector.y += d.y;
-                }
+                d = normalize(d);
+                closestCoords[i].vector.x += d.x;
+                closestCoords[i].vector.y += d.y;
             }
         }
     };
@@ -135,17 +120,6 @@ function main(){
             context.fillRect(this.x,this.y,gridSize,gridSize);
         },
 
-        // mapVectors: function(){
-        //     var d = computeForceVector(this, char1);
-        //     if (getMagnitude(d) > 0.00002){//reduce sensitivity
-        //         // d = normalize(d);
-        //         this.vector = {
-        //             "x" : d.x,
-        //             "y" : d.y
-        //         };
-        //         // console.log("Logging!");
-        //     }
-        // },
         logVect: function(){
             context.beginPath();
             context.moveTo(this.x, this.y);
@@ -155,15 +129,15 @@ function main(){
     };
 
     function initCoord(coordX,coordY){
-            Empty = function(){};
-            Empty.prototype = Coord;
-            coord = new Empty();
-            coord.x = coordX || 0;
-            coord.y = coordY || 0;
-            coord.centerX = coordX + gridSize/2;
-            coord.centerY = coordY + gridSize/2;
-            coord.vector = {"x": 0, "y": 0};
-            return coord;
+        Empty = function(){};
+        Empty.prototype = Coord;
+        coord = new Empty();
+        coord.x = coordX || 0;
+        coord.y = coordY || 0;
+        coord.centerX = coordX + gridSize/2;
+        coord.centerY = coordY + gridSize/2;
+        coord.vector = {"x": 0, "y": 0};
+        return coord;
     }
 
     function initCoordPlane(){
@@ -177,7 +151,6 @@ function main(){
     }
 
     function getSurroundingCoords(x,y,rInfluence){
-        // var currentCoord = getCurrentCoord(x,y);
         var listOfCoordsSquare = [];
         var listOfCoordsCircle = [];
         var iMin = Math.round((x - rInfluence)/gridSize);
@@ -233,17 +206,11 @@ function main(){
         return Math.sqrt(squareX + squareY);
     }
 
-    function getDirection(x1, y1, x2, y2){
-        deltaY = y2 - y1;
-        deltaX = x2 - x1;
-        return Math.atan2(deltaY,deltaX);
-    }
 
     function getMagnitude(vector){
         var x = vector.x;
         var y = vector.y;
         var n = Math.sqrt(x*x + y*y);
-        // console.log(n);
 
         return Math.abs(n);
     }
@@ -262,8 +229,6 @@ function main(){
             "y": deltaY,
         };
 
-        // console.log(direction.y);
-
         return direction;
     }
 
@@ -274,18 +239,12 @@ function main(){
             "x": (vector.x/length),
             "y": (vector.y/length),
         };
-        // console.log(normalizedVector.x, normalizedVector.y);
         return normalizedVector;
     }
 
     function computePointForce(coord, sprite){
         var direction = getDirectionTo(sprite, coord);
         var magnitude = getMagnitude(direction);
-        //return a vector in the direction of d
-        // var normalizedMagnitude = 1/Math.pow(magnitude,3);
-        // direction.x *= normalizedMagnitude;
-        // direction.y *= normalizedMagnitude; //weighted by magnitude squared and another to get unit vector?
-        // console.log(direction.x, direction.y);
         direction.x *= magnitude;
         direction.y *= magnitude;
         return direction;
@@ -295,9 +254,8 @@ function main(){
     function computeForceVector(coord, sprite){
         var velocity = {x: 0, y: 0};
         var force = computePointForce(coord, sprite);
-        velocity.x += force.x * sprite.forceFactor;
-        velocity.y += force.y * sprite.forceFactor;
-        // console.log(velocity.x, velocity.y);
+        velocity.x += force.x;
+        velocity.y += force.y;
         return velocity;
     }
 
@@ -306,21 +264,16 @@ function main(){
             if (Math.abs(coordList[i].vector.x)<0.8 && Math.abs(coordList[i].vector.y)<0.8){
                 coordList[i].vector.x = 0;
                 coordList[i].vector.y = 0;
-                coordList.splice(i,0);
+                coordList.splice(i,1);
             }
             else {
 
-                coordList[i].vector.x /= 1.00005;
-                coordList[i].vector.y /= 1.00005;
-
-
-////////////////INSTEAD: Make direction magnitude (speed) and unit vector (direction) a property of each object, use getVectorOfMotion() which gets speed and direction and multiplies that shit. Then degrade vectors could degrade magnitude incrementally and that shit would work.
+                coordList[i].vector.x /= 1.005;
+                coordList[i].vector.y /= 1.005;
             }
-            // coordList[i].vector *= magnitude;
         }
     }
 
-    // var coord1 = initCoord(200,200);
     initCoordPlane();
 
     var char1 = makeChar(50+Math.random()*200, 50+Math.random()*200,25);
@@ -330,10 +283,8 @@ function main(){
         sprites.push(boid);
     }
 
-    // var boid1 = makeBoid(50+Math.random()*200, 50+Math.random()*200,15);
 
     sprites.push(char1);
-    // sprites.push(boid1);
 
     function animate(){
         for (var i = 0; i < sprites.length; i++) {
@@ -342,17 +293,11 @@ function main(){
         for (var i = 0; i < sprites.length; i++) {
             sprites[i].move();
         }
-        // char1.imprint();
-        // boid1.imprint();
-        // char1.move();
-        // boid1.move();
         degradeVectors(affectedCoords);
 
     }
 
     function render(){
-        // char1.draw();
-        // boid1.draw();
 
         for (var i = 0; i < sprites.length; i++) {
              sprites[i].draw();
