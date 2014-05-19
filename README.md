@@ -13,7 +13,7 @@ try to clear the area.
 - Multiplayer with signaling server and p2p connections
 
 ## Link to the Game
-###[go play it](http://katielefevre.com/) 
+###[go play it](http://katielefevre.com/space_monster.html) 
 
 ## Screenshots
 ![Alt text](https://raw.github.com/ktel1218/HackbrightFinal/master/screenshots/normal.png "in-game screenshot")
